@@ -1,9 +1,3 @@
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
----
-
 ## Pre-requisites
 
 - Working installaton of [Docker](https://docs.docker.com/get-docker/) (Run **docker ps** to test)
