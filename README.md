@@ -6,13 +6,8 @@
 
 ## Pre-requisites
 
-####- [Docker](https://docs.docker.com/get-docker/)
-
-## Installation
-
-```bash
-$ npm install
-```
+- Working installaton of [Docker](https://docs.docker.com/get-docker/) (Run **docker ps** to test)
+- [NodeJS](https://nodejs.org/en/download/)
 
 ## Running the app
 
@@ -21,8 +16,9 @@ $ npm install
 - Create a **.env** file and set the environment variables.
 - Use the **.env.example** file as a reference
 
+#### Run the services (backend & database)
+
 ```bash
-# development
 $ npm run services
 ```
 
