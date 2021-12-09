@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "services": "docker-compose up --build --no-recreate",
     "typeorm": "node --require  ts-node/register  ./node_modules/typeorm/cli.js",
+    "db:bash": "docker exec -it db_postgres bash",
     "migration:generate": "docker exec ga_backend npm run typeorm migration:generate -- -n",
     "migration:run": "docker exec ga_backend npm run typeorm migration:run",
     "migration:revert": "docker exec ga_backend npm run typeorm migration:revert"
