@@ -1,1 +1,0 @@
-INSERT INTO public.user(email, password, role) VALUES ('admin@sample.com', '$2b$10$tgCEWdWS/04mEjzSH.XiA.2C1HaBkXLkUIeGRNQPUoP6YrHuMu9ki', 'admin');
