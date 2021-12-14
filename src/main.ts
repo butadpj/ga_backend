@@ -7,8 +7,11 @@ async function bootstrap() {
   const port = process.env.PORT;
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
+  app.enableCors({
+    origin: ['http://localhost:3000'],
+  });
   await app.listen(port);
 
-  Logger.log(`Server started running on http://localhost:${port}`, 'Bootstrap');
+  Logger.log(`Server started running on http://localhost:${port}`, 'Backend');
 }
 bootstrap();
