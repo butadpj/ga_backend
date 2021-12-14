@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CreateUserDTO, UserDTO } from './dto';
 import { Role } from './roles/role.enum';
@@ -17,8 +17,15 @@ export class UsersController {
     return this.usersService.allUsers();
   }
 
-  // @Roles(Role.Admin)
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get(':email')
+  @Roles(Role.User, Role.Admin)
+  getUser(@Param('email') email: string): Promise<UserDTO> {
+    return this.usersService.findUser(email);
+  }
+
+  @Roles(Role.Admin)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('/')
   createUser(@Body() credentials: CreateUserDTO): Promise<any | TypeError> {
     return this.usersService.createUser(credentials);
