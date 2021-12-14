@@ -3,7 +3,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { LoginUserDTO } from '../users/dto';
+import { LoginUserDTO, UserDTO } from '../users/dto';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -18,7 +18,7 @@ export class AuthService {
     private httpService: HttpService,
   ) {}
 
-  async validateUser(credentials: LoginUserDTO): Promise<LoginUserDTO> {
+  async validateUser(credentials: LoginUserDTO): Promise<UserDTO> {
     const user = await this.usersService.findUser(credentials.email);
 
     if (user) {

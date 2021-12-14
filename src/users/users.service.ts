@@ -51,4 +51,37 @@ export class UsersService {
 
     return { id: result.id, email: result.email };
   }
+
+  async createTwitchUserData({
+    user_email,
+    twitch_user_id,
+    twitch_display_name,
+    twitch_email,
+    twitch_display_picture,
+  }): Promise<any> {
+    const user = await this.findUser(user_email);
+
+    if (!user) {
+      throw new UnprocessableEntityException(
+        {
+          statusCode: 422,
+          message: `Cannot find user with an email of ${user_email}`,
+          error: 'Unprocessable Entity',
+        },
+        `User doesn't exist`,
+      );
+    }
+
+    this.usersRepository.update(
+      { email: user_email },
+      {
+        twitch_user_id,
+        twitch_display_name,
+        twitch_email,
+        twitch_display_picture,
+      },
+    );
+
+    return await this.findUser(user_email);
+  }
 }
