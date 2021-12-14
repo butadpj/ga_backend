@@ -6,7 +6,7 @@ services:
       - .:/my-app
     container_name: ga_backend
     ports:
-      - 4000:4000
+      - ${PORT}:4000
     depends_on:
       - db
   db:
