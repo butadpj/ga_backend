@@ -1,3 +1,4 @@
+import { UserTwitchVideo } from '@users/entity/user-twitch-video.entity';
 import { Role } from '@users/roles/role.enum';
 
 export class UserDTO {
@@ -9,4 +10,5 @@ export class UserDTO {
   readonly twitch_display_name?: string;
   readonly twitch_email?: string;
   readonly twitch_display_picture?: string;
+  twitch_videos: UserTwitchVideo[];
 }
