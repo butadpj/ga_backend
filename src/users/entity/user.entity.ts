@@ -1,5 +1,6 @@
 import { Role } from '@users/roles/role.enum';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { UserTwitchVideo } from './user-twitch-video.entity';
 
 @Entity()
 export class User {
@@ -26,4 +27,7 @@ export class User {
 
   @Column({ nullable: true })
   twitch_display_picture: string;
+
+  @OneToMany(() => UserTwitchVideo, (twitch_videos) => twitch_videos.user)
+  twitch_videos: UserTwitchVideo[];
 }
