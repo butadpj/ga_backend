@@ -21,6 +21,9 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    return user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: pwd, role, ...rest } = user;
+
+    return { ...rest };
   }
 }
