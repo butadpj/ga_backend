@@ -19,7 +19,7 @@ export class AuthService {
   ) {}
 
   async validateUser(credentials: LoginUserDTO): Promise<UserDTO> {
-    const user = await this.usersService.findUser(credentials.email);
+    const user = await this.usersService.findUser({ email: credentials.email });
 
     if (user) {
       const isPasswordMatch = await bcrypt.compare(
@@ -51,10 +51,13 @@ export class AuthService {
   }
 
   async login(user: any): Promise<any> {
-    const payload = { email: user.email };
+    const payload = {
+      userID: user.id,
+      email: user.email,
+    };
 
     return {
-      email: payload.email,
+      ...payload,
       access_token: this.jwtService.sign(payload),
     };
   }
@@ -69,10 +72,15 @@ export class AuthService {
       .pipe(map((response) => response.data))
       .toPromise();
 
-    return this.getTwitchUserData(access_token, email);
+    const { id, twitch_user_id } = await this.getTwitchUserData(
+      access_token,
+      email,
+    );
+
+    this.getTwitchUserVideos({ userId: id, access_token, twitch_user_id });
   }
 
-  async getTwitchUserData(access_token, email): Promise<any> {
+  async getTwitchUserData(access_token: string, email: string): Promise<any> {
     const res = this.httpService.get(`https://api.twitch.tv/helix/users`, {
       headers: {
         Authorization: `Bearer ${access_token}`,
@@ -87,12 +95,98 @@ export class AuthService {
       email: twitch_email,
     } = await res.pipe(map((response) => response.data.data[0])).toPromise();
 
-    return this.usersService.createTwitchUserData({
+    return this.usersService.updateTwitchUserData({
       twitch_user_id,
       twitch_display_name,
       twitch_display_picture,
       twitch_email,
       user_email: email,
     });
+  }
+
+  async getTwitchUserVideos({
+    userId,
+    access_token,
+    twitch_user_id,
+  }): Promise<any> {
+    const res = this.httpService.get(
+      `https://api.twitch.tv/helix/videos?user_id=${twitch_user_id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Client-Id': process.env.TWITCH_CLIENT_ID,
+        },
+      },
+    );
+
+    const videos = await res
+      .pipe(map((response) => response.data.data))
+      .toPromise();
+
+    // const videos = [
+    //   {
+    //     id: '335921245',
+    //     stream_id: null,
+    //     user_id: '141981764',
+    //     user_login: 'twitchdev',
+    //     user_name: 'TwitchDev',
+    //     title: 'Twitch Developers 101',
+    //     description:
+    //       'Welcome to Twitch development! Here is a quick overview of our products and information to help you get started.',
+    //     created_at: '2018-11-14T21:30:18Z',
+    //     published_at: '2018-11-14T22:04:30Z',
+    //     url: 'https://www.twitch.tv/videos/335921245',
+    //     thumbnail_url:
+    //       'https://static-cdn.jtvnw.net/cf_vods/d2nvs31859zcd8/twitchdev/335921245/ce0f3a7f-57a3-4152-bc06-0c6610189fb3/thumb/index-0000000000-%{width}x%{height}.jpg',
+    //     viewable: 'public',
+    //     view_count: 1863062,
+    //     language: 'en',
+    //     type: 'upload',
+    //     duration: '3m21s',
+    //     muted_segments: [
+    //       {
+    //         duration: 30,
+    //         offset: 120,
+    //       },
+    //     ],
+    //   },
+    // ];
+
+    if (videos.length > 0) {
+      videos.map((video) => {
+        const {
+          user_id: twitch_id,
+          stream_id: twitch_stream_id,
+          title,
+          description,
+          url,
+          thumbnail_url,
+          viewable,
+          view_count,
+          type,
+          duration,
+          created_at,
+          published_at,
+        } = video;
+
+        return this.usersService.createTwitchVideo(userId, {
+          twitch_id,
+          twitch_stream_id,
+          title,
+          description,
+          url,
+          thumbnail_url,
+          viewable,
+          view_count,
+          type,
+          duration,
+          created_at,
+          published_at,
+        });
+      });
+    }
+    console.log('No twitch videos');
+
+    return { message: `User has no twitch videos` };
   }
 }

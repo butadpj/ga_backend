@@ -18,10 +18,24 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get(':email')
+  @Get(':id')
   @Roles(Role.User, Role.Admin)
-  getUser(@Param('email') email: string): Promise<UserDTO> {
-    return this.usersService.findUser(email);
+  getUser(@Param('id') id: string): Promise<UserDTO> {
+    return this.usersService.findUser({ id: Number(id) });
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('/twitch-videos/:id')
+  @Roles(Role.User, Role.Admin)
+  getUserTwitchVideos(@Param('id') id: string): Promise<UserDTO> {
+    return this.usersService.getUserTwitchVideos(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('/unlink-twitch/:id')
+  @Roles(Role.User, Role.Admin)
+  unLinkTwitchAccount(@Param('id') id: string): Promise<UserDTO> {
+    return this.usersService.unlinkTwitchUserData(id);
   }
 
   @Roles(Role.Admin)
