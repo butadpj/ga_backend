@@ -9,7 +9,7 @@ module.exports = {
   synchronize: false,
   migrations: ['dist/**/migrations/*.{ts,js}'],
   migrationsTableName: 'migrations',
-  migrationsRun: false,
+  migrationsRun: process.env.AUTO_MIGRATION === 'true' ? true : false,
   cli: {
     migrationsDir: './src/migrations',
   },
