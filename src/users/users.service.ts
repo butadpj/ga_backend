@@ -74,7 +74,7 @@ export class UsersService {
   }
 
   async createTwitchVideo(
-    userId: string,
+    email: string,
     {
       twitch_id,
       twitch_stream_id,
@@ -90,13 +90,13 @@ export class UsersService {
       published_at,
     },
   ): Promise<any> {
-    const user = await this.findUser({ id: userId });
+    const user = await this.findUser({ email });
 
     if (!user) {
       throw new UnprocessableEntityException(
         {
           statusCode: 422,
-          message: `Cannot find user with an id of ${userId}`,
+          message: `Cannot find user with an email of ${email}`,
           error: 'Unprocessable Entity',
         },
         `User doesn't exist`,
