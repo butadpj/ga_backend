@@ -7,7 +7,7 @@ export class TwitchController {
 
   @Redirect(process.env.CLIENT_HOST)
   @Get('/')
-  getUserTwitchAccessToken(
+  processTwitchAuth(
     @Query() { code, scope, state }: any,
   ): Promise<any> | { message: string } {
     if (code && scope && state) {
@@ -17,7 +17,7 @@ export class TwitchController {
       // return "thisismyemail@sample.com"
       const pattern = /(?<=:email\s*).*?(?=\s*\:)/;
       const email = state.match(pattern)[0];
-      return this.twitchService.getUserTwitchAccessToken(code, email);
+      return this.twitchService.processTwitchAuth(code, email);
     }
     return { message: `Server didn't return anything` };
   }
