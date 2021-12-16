@@ -52,7 +52,7 @@ export class AuthService {
 
   async login(user: any): Promise<any> {
     const payload = {
-      userID: user.id,
+      userId: user.id,
       email: user.email,
     };
 
@@ -185,8 +185,6 @@ export class AuthService {
         });
       });
     }
-    console.log('No twitch videos');
-
     return { message: `User has no twitch videos` };
   }
 }
