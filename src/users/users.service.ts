@@ -103,21 +103,6 @@ export class UsersService {
       );
     }
 
-    console.log({
-      twitch_id,
-      twitch_stream_id,
-      title,
-      description,
-      url,
-      thumbnail_url,
-      viewable,
-      view_count,
-      type,
-      duration,
-      created_at,
-      published_at,
-    });
-
     const twitchVideo = this.userTwitchVideoRepository.create({
       twitch_id,
       twitch_stream_id,
