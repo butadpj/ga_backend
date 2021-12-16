@@ -5,7 +5,7 @@ import { TwitchService } from './twitch.service';
 export class TwitchController {
   constructor(private twitchService: TwitchService) {}
 
-  // @Redirect(process.env.CLIENT_HOST)
+  @Redirect(process.env.CLIENT_HOST)
   @Get('/')
   processTwitchAuth(
     @Query() { code, scope, state }: any,
