@@ -19,21 +19,4 @@ export class AuthController {
   login(@Request() req: any): any {
     return this.authService.login(req.user);
   }
-
-  @Redirect('http://localhost:3000/')
-  @Get('login')
-  getUserTwitchAccessToken(
-    @Query() { code, scope, state }: any,
-  ): Promise<any> | { message: string } {
-    if (code && scope && state) {
-      // extract the email from the state
-      // email is always between ":email" and ":"
-      // Ex. dsgSAw1esdojxzMSsxna:emailthisismyemail@sample.com:
-      // return "thisismyemail@sample.com"
-      const pattern = /(?<=:email\s*).*?(?=\s*\:)/;
-      const email = state.match(pattern)[0];
-      return this.authService.getUserTwitchAccessToken(code, email);
-    }
-    return { message: `Server didn't return anything` };
-  }
 }

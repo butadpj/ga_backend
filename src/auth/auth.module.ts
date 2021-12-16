@@ -1,4 +1,3 @@
-import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -16,10 +15,6 @@ import { LocalStrategy } from './local.strategy';
     JwtModule.register({
       secret: jwtConstants.secret,
       signOptions: { expiresIn: '30m' },
-    }),
-    HttpModule.register({
-      timeout: 5000,
-      maxRedirects: 5,
     }),
   ],
   controllers: [AuthController],
