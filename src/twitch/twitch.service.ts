@@ -87,7 +87,10 @@ export class TwitchService {
   }
 
   async getUserTwitchAccessToken(code: string): Promise<any> {
-    const redirectUri = `${process.env.HOST}:${process.env.PORT}/twitch-auth`;
+    let redirectUri = `${process.env.HOST}/twitch-auth`;
+
+    if (process.env.NODE_ENV === 'development')
+      redirectUri = `${process.env.HOST}:${process.env.PORT}/twitch-auth`;
 
     const res = this.httpService.post(
       `https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${redirectUri}`,
