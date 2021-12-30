@@ -8,10 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://staging-game-antena-client.vercel.app',
-    ],
+    origin: ['http://localhost:3000', 'https://staging.game-antena.com'],
   });
   await app.listen(port);
 
