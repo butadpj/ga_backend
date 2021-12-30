@@ -56,6 +56,17 @@ export class UsersService {
     return { id: result.id, email: result.email };
   }
 
+  async markEmailAsConfirmed(email: string) {
+    await this.usersRepository.update(
+      { email },
+      {
+        isEmailConfirmed: true,
+      },
+    );
+
+    return await this.findUser({ email: email });
+  }
+
   async getUserTwitchVideos(userId: string): Promise<any> {
     const user = await this.findUser({ id: userId });
 

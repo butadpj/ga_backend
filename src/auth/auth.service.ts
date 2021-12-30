@@ -3,7 +3,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { LoginUserDTO, UserDTO } from '../users/dto';
+import { CreateUserDTO, LoginUserDTO, UserDTO } from '../users/dto';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -51,11 +51,16 @@ export class AuthService {
     const payload = {
       userId: user.id,
       email: user.email,
+      isEmailConfirmed: user.isEmailConfirmed,
     };
 
     return {
       ...payload,
       access_token: this.jwtService.sign(payload),
     };
+  }
+
+  async register(credentials: CreateUserDTO): Promise<any> {
+    return await this.usersService.createUser(credentials);
   }
 }

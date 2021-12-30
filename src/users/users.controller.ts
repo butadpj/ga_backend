@@ -37,15 +37,4 @@ export class UsersController {
   unLinkTwitchAccount(@Param('id') id: string): Promise<UserDTO> {
     return this.usersService.unlinkTwitchUserData(id);
   }
-
-  @Roles(Role.Admin)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post('/')
-  createUser(@Body() credentials: CreateUserDTO): Promise<any | TypeError> {
-    return this.usersService.createUser(credentials);
-  }
-
-  // login(): LoginUserDTO {
-  //   return
-  // }
 }

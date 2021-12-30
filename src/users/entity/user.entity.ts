@@ -16,6 +16,9 @@ export class User {
   @Column({ type: 'enum', enum: Role, default: Role.User })
   role?: Role[];
 
+  @Column({ default: false })
+  isEmailConfirmed: boolean;
+
   @Column({ nullable: true })
   twitch_user_id: string;
 

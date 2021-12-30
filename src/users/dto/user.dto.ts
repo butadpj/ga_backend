@@ -11,4 +11,5 @@ export class UserDTO {
   readonly twitch_email?: string;
   readonly twitch_display_picture?: string;
   twitch_videos: UserTwitchVideo[];
+  isEmailConfirmed: boolean;
 }
