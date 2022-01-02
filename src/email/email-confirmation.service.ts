@@ -27,10 +27,10 @@ export class EmailConfirmationService {
     const url = `${process.env.CLIENT_HOST}/email-confirm?token=${token}`;
 
     const html = `
-      <div style="padding: 2rem 5rem; background-color: #f5f5f7; color: #c96141;">
+      <div style="padding: 2rem 5rem; background-color: #f5f5f7; color: #1e1e1e;">
         <img src="https://i.ibb.co/x1TBcSX/ga-logo.png"/>
         <br/>
-        <h1>Welcome to Game-Antena</h1>
+        <h1>Welcome to Game-Antena!</h1>
         <br/>
         <h2>Just click the confirmation link below to login: </h2>
         <h3>${url}</h3>
@@ -38,6 +38,7 @@ export class EmailConfirmationService {
     `;
 
     return this.emailService.sendMail({
+      from: 'Game-Antena',
       to: email,
       subject: `Confirm your account on Game-Antena`,
       html,
