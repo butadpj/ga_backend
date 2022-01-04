@@ -11,7 +11,7 @@ export class TwitchService {
   ) {}
 
   async processTwitchAuth(code: string, email: string): Promise<any> {
-    const access_token = await this.getUserTwitchAccessToken(code);
+    const access_token = await this.getUserOAuthToken(code);
     if (!access_token) throw new Error('Invalid or undefined access_token');
 
     const { twitch_user_id } = await this.processUserTwitchData(
@@ -20,6 +20,8 @@ export class TwitchService {
     );
 
     await this.processUserTwitchVideos(access_token, email, twitch_user_id);
+
+    // await this.processUserChannelInformation(access_token, twitch_user_id);
   }
 
   async processUserTwitchData(access_token: string, email: string) {
@@ -86,11 +88,51 @@ export class TwitchService {
     return { message: `User has no twitch videos` };
   }
 
-  async getUserTwitchAccessToken(code: string): Promise<any> {
-    let redirectUri = `${process.env.HOST}/twitch-auth`;
+  async processUserChannelInformation(
+    access_token: string,
+    broadcaster_id: string,
+  ) {
+    try {
+      const res = this.httpService.get(
+        `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${broadcaster_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Client-Id': process.env.TWITCH_CLIENT_ID,
+          },
+        },
+      );
+
+      const channel = await res
+        .pipe(map((response) => response.data.data))
+        .toPromise();
+
+      console.log(channel);
+    } catch (error) {
+      console.log(error.response.data);
+    }
+  }
+
+  async processTopGamingStreams(access_token: string) {
+    const topGames = await this.getTopGames(access_token);
+
+    const game_streams = await topGames.map(async (game: any) => {
+      const streams = await this.getTopGamingStreams(game.id, access_token);
+      return {
+        game: game.name,
+        streams,
+      };
+    });
+
+    // Wait for all game_streams to be fetched completely then return them
+    return await Promise.all(game_streams).then((result) => result);
+  }
+
+  async getUserOAuthToken(code: string): Promise<any> {
+    let redirectUri = `${process.env.HOST}/twitch/auth`;
 
     if (process.env.NODE_ENV === 'development')
-      redirectUri = `${process.env.HOST}:${process.env.PORT}/twitch-auth`;
+      redirectUri = `${process.env.HOST}:${process.env.PORT}/twitch/auth`;
 
     const res = this.httpService.post(
       `https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${redirectUri}`,
@@ -142,5 +184,43 @@ export class TwitchService {
       .toPromise();
 
     return videos;
+  }
+
+  async getTopGames(access_token: string) {
+    const res = this.httpService.get(`https://api.twitch.tv/helix/games/top`, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        'Client-Id': process.env.TWITCH_CLIENT_ID,
+      },
+    });
+
+    const top_games = await res
+      .pipe(map((response) => response.data.data))
+      .toPromise();
+
+    return top_games.map((game: any) => {
+      return {
+        id: game.id,
+        name: game.name,
+      };
+    });
+  }
+
+  async getTopGamingStreams(game_id: string, access_token: string) {
+    const res = this.httpService.get(
+      `https://api.twitch.tv/helix/streams?game_id=${game_id}&first=5`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Client-Id': process.env.TWITCH_CLIENT_ID,
+        },
+      },
+    );
+
+    const top_gaming_streams = await res
+      .pipe(map((response) => response.data.data))
+      .toPromise();
+
+    return top_gaming_streams;
   }
 }
