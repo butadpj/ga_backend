@@ -31,7 +31,7 @@ $ npm run migration:run
 - `GET` /users - List of all users (Must be logged in as a **user**)
 - `POST` /register - Register as a user
 - `POST` /login - This is where you enter your **email** and **password** to login (Must have a user or admin account)
-- `GET` /twitch-auth - OAuth Redirect endpoint for twitch authentication
+- `GET` /twitch/auth - OAuth Redirect endpoint for twitch authentication
 
 #### First time running the app? Create an admin account first
 

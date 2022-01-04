@@ -1,12 +1,12 @@
 import { Controller, Get, Query, Redirect } from '@nestjs/common';
 import { TwitchService } from './twitch.service';
 
-@Controller('twitch-auth')
+@Controller('twitch')
 export class TwitchController {
   constructor(private twitchService: TwitchService) {}
 
-  @Redirect(process.env.CLIENT_HOST)
-  @Get('/')
+  @Redirect(`${process.env.CLIENT_HOST}/twitch-gaming`)
+  @Get('/auth')
   processTwitchAuth(
     @Query() { code, scope, state }: any,
   ): Promise<any> | { message: string } {
@@ -20,5 +20,11 @@ export class TwitchController {
       return this.twitchService.processTwitchAuth(code, email);
     }
     return { message: `Server didn't return anything` };
+  }
+
+  @Get('/gaming-streams')
+  getTopGamingStreams() {
+    const app_access_token = process.env.TWITCH_APP_ACCESS_TOKEN;
+    return this.twitchService.processTopGamingStreams(app_access_token);
   }
 }
