@@ -207,8 +207,9 @@ export class TwitchService {
   }
 
   async getTopGamingStreams(game_id: string, access_token: string) {
+    const streamCount = 8;
     const res = this.httpService.get(
-      `https://api.twitch.tv/helix/streams?game_id=${game_id}&first=5`,
+      `https://api.twitch.tv/helix/streams?game_id=${game_id}&first=${streamCount}`,
       {
         headers: {
           Authorization: `Bearer ${access_token}`,
