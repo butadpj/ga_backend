@@ -99,6 +99,12 @@ export class TwitchService {
     email: string,
     user_id: string,
   ) {
+    const followersCount = await this.getUserFollowers(access_token, user_id);
+    await this.usersService.updateTwitchUserData({
+      user_email: email,
+      twitch_followers_count: followersCount,
+    });
+
     const {
       error,
       total: subscribersCount,
@@ -106,25 +112,24 @@ export class TwitchService {
     } = await this.getChannelSubscribers(access_token, user_id);
 
     if (error && error === 'channel not qualified') {
-      this.usersService.updateTwitchUserData({
+      await this.usersService.updateTwitchUserData({
         user_email: email,
         twitch_channel_qualified: false,
       });
     }
 
-    if (subscribers.length > 0) {
+    if (subscribers && subscribersCount && subscribers.length > 0) {
       subscribers.forEach((subscriber: any) => {
         return this.usersService.createTwitchSubscriber(email, subscriber);
       });
+
+      await this.usersService.updateTwitchUserData({
+        user_email: email,
+        twitch_subscribers_count: subscribersCount,
+      });
     }
 
-    const followersCount = await this.getUserFollowers(access_token, user_id);
-
-    return await this.usersService.updateTwitchUserData({
-      user_email: email,
-      twitch_followers_count: followersCount,
-      twitch_subscribers_count: subscribersCount,
-    });
+    return;
   }
 
   async processTopGamingStreams(access_token: string) {
