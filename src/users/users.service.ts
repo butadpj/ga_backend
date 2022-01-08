@@ -242,6 +242,7 @@ export class UsersService {
         twitch_display_picture: null,
         twitch_followers_count: null,
         twitch_subscribers_count: null,
+        twitch_channel_qualified: null,
       },
     );
 
