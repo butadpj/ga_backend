@@ -26,3 +26,37 @@ export const mockVideos = [
     ],
   },
 ];
+
+export const mockSubscribers = {
+  data: [
+    {
+      broadcaster_id: '751760143',
+      broadcaster_login: 'manguydudebroski',
+      broadcaster_name: 'manguydudebroski',
+      gifter_id: '12826',
+      gifter_login: 'twitch',
+      gifter_name: 'Twitch',
+      is_gift: true,
+      tier: '1000',
+      plan_name: 'Channel Subscription (manguydudebroski)',
+      user_id: '527115020',
+      user_name: 'twitchgaming',
+      user_login: 'twitchgaming',
+    },
+    {
+      broadcaster_id: '751760143',
+      broadcaster_login: 'manguydudebroski',
+      broadcaster_name: 'manguydudebroski',
+      gifter_id: '12826',
+      gifter_login: 'twitch',
+      gifter_name: 'Twitch',
+      is_gift: true,
+      tier: '1000',
+      plan_name: 'Channel Subscription (manguydudebroski)',
+      user_id: '751760143',
+      user_name: 'manguydudebroski',
+      user_login: 'manguydudebroski',
+    },
+  ],
+  total: 1,
+};
