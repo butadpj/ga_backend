@@ -1,5 +1,6 @@
 import { Role } from '@users/roles/role.enum';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { UserTwitchSubscribers } from './user-twitch-subscribers';
 import { UserTwitchVideo } from './user-twitch-video.entity';
 
 @Entity()
@@ -31,6 +32,21 @@ export class User {
   @Column({ nullable: true })
   twitch_display_picture: string;
 
+  @Column({ nullable: true })
+  twitch_followers_count: number;
+
+  @Column({ nullable: true })
+  twitch_subscribers_count: number;
+
+  @Column({ nullable: true })
+  twitch_channel_qualified: boolean;
+
   @OneToMany(() => UserTwitchVideo, (twitch_videos) => twitch_videos.user)
   twitch_videos: UserTwitchVideo[];
+
+  @OneToMany(
+    () => UserTwitchSubscribers,
+    (twitch_subscribers) => twitch_subscribers.user,
+  )
+  twitch_subscribers: UserTwitchSubscribers[];
 }

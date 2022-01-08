@@ -54,6 +54,12 @@ export class AuthService {
       isEmailConfirmed: user.isEmailConfirmed,
     };
 
+    const loggedInUser = await this.usersService.findUser({ id: user.id });
+
+    const hasTwitch = this.usersService.hasExistingTwitchAccount(loggedInUser);
+
+    if (hasTwitch) this.usersService.autoUnlinkTwitchAccount(user.email);
+
     return {
       ...payload,
       access_token: this.jwtService.sign(payload),

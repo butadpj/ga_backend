@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '@users/users.service';
 import { map } from 'rxjs';
+import { mockSubscribers } from 'src/utils/mockData';
 
 @Injectable()
 export class TwitchService {
@@ -21,7 +22,13 @@ export class TwitchService {
 
     await this.processUserTwitchVideos(access_token, email, twitch_user_id);
 
-    // await this.processUserChannelInformation(access_token, twitch_user_id);
+    await this.processUserChannelInformation(
+      access_token,
+      email,
+      twitch_user_id,
+    );
+
+    this.usersService.autoUnlinkTwitchAccount(email);
   }
 
   async processUserTwitchData(access_token: string, email: string) {
@@ -30,15 +37,14 @@ export class TwitchService {
       twitch_display_name,
       twitch_display_picture,
       twitch_email,
-      user_email,
-    } = await this.getTwitchUserData(access_token, email);
+    } = await this.getTwitchUserData({ access_token });
 
     return await this.usersService.updateTwitchUserData({
       twitch_user_id,
       twitch_display_name,
       twitch_display_picture,
       twitch_email,
-      user_email,
+      user_email: email,
     });
   }
 
@@ -90,27 +96,35 @@ export class TwitchService {
 
   async processUserChannelInformation(
     access_token: string,
-    broadcaster_id: string,
+    email: string,
+    user_id: string,
   ) {
-    try {
-      const res = this.httpService.get(
-        `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${broadcaster_id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            'Client-Id': process.env.TWITCH_CLIENT_ID,
-          },
-        },
-      );
+    const {
+      error,
+      total: subscribersCount,
+      subscribers,
+    } = await this.getChannelSubscribers(access_token, user_id);
 
-      const channel = await res
-        .pipe(map((response) => response.data.data))
-        .toPromise();
-
-      console.log(channel);
-    } catch (error) {
-      console.log(error.response.data);
+    if (error && error === 'channel not qualified') {
+      this.usersService.updateTwitchUserData({
+        user_email: email,
+        twitch_channel_qualified: false,
+      });
     }
+
+    if (subscribers.length > 0) {
+      subscribers.forEach((subscriber: any) => {
+        return this.usersService.createTwitchSubscriber(email, subscriber);
+      });
+    }
+
+    const followersCount = await this.getUserFollowers(access_token, user_id);
+
+    return await this.usersService.updateTwitchUserData({
+      user_email: email,
+      twitch_followers_count: followersCount,
+      twitch_subscribers_count: subscribersCount,
+    });
   }
 
   async processTopGamingStreams(access_token: string) {
@@ -137,17 +151,29 @@ export class TwitchService {
     const res = this.httpService.post(
       `https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${redirectUri}`,
     );
-    const { access_token } = await res
-      .pipe(map((response) => response.data))
-      .toPromise();
+    const data = await res.pipe(map((response) => response.data)).toPromise();
 
-    return access_token;
+    return data.access_token;
   }
 
-  async getTwitchUserData(access_token: string, email: string): Promise<any> {
-    const res = this.httpService.get(`https://api.twitch.tv/helix/users`, {
+  async getTwitchUserData({
+    access_token,
+    user_id,
+  }: {
+    access_token?: string;
+    user_id?: string;
+  }): Promise<any> {
+    let url = `https://api.twitch.tv/helix/users?id=${user_id}`;
+    let headerToken = `Bearer ${process.env.TWITCH_APP_ACCESS_TOKEN}`;
+
+    if (access_token) {
+      url = `https://api.twitch.tv/helix/users`;
+      headerToken = `Bearer ${access_token}`;
+    }
+
+    const res = this.httpService.get(url, {
       headers: {
-        Authorization: `Bearer ${access_token}`,
+        Authorization: headerToken,
         'Client-Id': process.env.TWITCH_CLIENT_ID,
       },
     });
@@ -164,7 +190,6 @@ export class TwitchService {
       twitch_display_name,
       twitch_display_picture,
       twitch_email,
-      user_email: email,
     };
   }
 
@@ -223,5 +248,79 @@ export class TwitchService {
       .toPromise();
 
     return top_gaming_streams;
+  }
+
+  async getUserFollowers(access_token: string, user_id: string) {
+    try {
+      const res = this.httpService.get(
+        `https://api.twitch.tv/helix/users/follows?to_id=${user_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Client-Id': process.env.TWITCH_CLIENT_ID,
+          },
+        },
+      );
+
+      const totalFollowers = await res
+        .pipe(map((response) => response.data.total))
+        .toPromise();
+
+      return totalFollowers;
+    } catch (error) {
+      console.log(error.response.data);
+      return error.response.data.message;
+    }
+  }
+
+  async getChannelSubscribers(
+    access_token: string,
+    broadcaster_id: string,
+  ): Promise<any> {
+    try {
+      const res = this.httpService.get(
+        `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${broadcaster_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Client-Id': process.env.TWITCH_CLIENT_ID,
+          },
+        },
+      );
+
+      const { data, total } = await res
+        .pipe(map((response) => response.data))
+        .toPromise();
+
+      // const { data, total } = mockSubscribers;
+
+      const subscribersPromise = data.map(async (subscriber: any) => {
+        const { twitch_display_picture } = await this.getTwitchUserData({
+          user_id: subscriber.user_id,
+        });
+
+        return {
+          twitch_id: subscriber.broadcaster_id,
+          subscriber_id: subscriber.user_id,
+          subscriber_name: subscriber.user_name,
+          subscriber_display_picture: twitch_display_picture,
+          is_gift: subscriber.is_gift,
+        };
+      });
+
+      const subscribers = await Promise.all(subscribersPromise).then(
+        (result) => result,
+      );
+
+      return {
+        subscribers,
+        total,
+      };
+    } catch (error) {
+      console.log(error.response.data);
+      return {
+        error: 'channel not qualified',
+      };
+    }
   }
 }
