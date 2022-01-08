@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { CreateUserDTO, UserDTO } from './dto';
+import { UserDTO } from './dto';
 import { Role } from './roles/role.enum';
 import { Roles } from './roles/roles.decorator';
 import { RolesGuard } from './roles/roles.guard';
@@ -28,13 +28,20 @@ export class UsersController {
   @Get('/twitch-videos/:id')
   @Roles(Role.User, Role.Admin)
   getUserTwitchVideos(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersService.getUserTwitchVideos(id);
+    return this.usersService.getUserTwitchVideos(Number(id));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('/twitch-subscribers/:id')
+  @Roles(Role.User, Role.Admin)
+  getUserTwitchSubscribers(@Param('id') id: string): Promise<UserDTO> {
+    return this.usersService.getUserTwitchSubscribers(Number(id));
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('/unlink-twitch/:id')
   @Roles(Role.User, Role.Admin)
   unLinkTwitchAccount(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersService.unlinkTwitchUserData(id);
+    return this.usersService.unlinkTwitchUserData(Number(id));
   }
 }
