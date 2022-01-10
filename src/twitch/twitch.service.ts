@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '@users/users.service';
@@ -100,11 +101,21 @@ export class TwitchService {
     user_id: string,
   ) {
     const followersCount = await this.getUserFollowers(access_token, user_id);
-    await this.usersService.updateTwitchUserData({
-      user_email: email,
-      twitch_followers_count: followersCount,
-    });
 
+    return await this.processUserTwitchSubscribers(
+      access_token,
+      email,
+      user_id,
+      followersCount,
+    );
+  }
+
+  async processUserTwitchSubscribers(
+    access_token: string,
+    email: string,
+    user_id: string,
+    followersCount: number,
+  ): Promise<any> {
     const {
       error,
       total: subscribersCount,
@@ -112,24 +123,28 @@ export class TwitchService {
     } = await this.getChannelSubscribers(access_token, user_id);
 
     if (error && error === 'channel not qualified') {
-      await this.usersService.updateTwitchUserData({
+      return await this.usersService.updateTwitchUserData({
         user_email: email,
         twitch_channel_qualified: false,
+        twitch_followers_count: followersCount,
       });
     }
 
-    if (subscribers && subscribersCount && subscribers.length > 0) {
-      subscribers.forEach((subscriber: any) => {
-        return this.usersService.createTwitchSubscriber(email, subscriber);
-      });
+    const user = await this.usersService.updateTwitchUserData({
+      user_email: email,
+      twitch_channel_qualified: true,
+      twitch_subscribers_count: subscribersCount,
+      twitch_followers_count: followersCount,
+    });
 
-      await this.usersService.updateTwitchUserData({
-        user_email: email,
-        twitch_subscribers_count: subscribersCount,
-      });
+    if (subscribersCount > 0) {
+      subscribers.forEach(
+        async (subscriber: any) =>
+          await this.usersService.createTwitchSubscriber(email, subscriber),
+      );
     }
 
-    return;
+    return user;
   }
 
   async processTopGamingStreams(access_token: string) {
@@ -284,7 +299,7 @@ export class TwitchService {
   ): Promise<any> {
     try {
       const res = this.httpService.get(
-        `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${broadcaster_id}`,
+        `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${broadcaster_id}&first=10`,
         {
           headers: {
             Authorization: `Bearer ${access_token}`,
@@ -293,11 +308,11 @@ export class TwitchService {
         },
       );
 
-      const { data, total } = await res
-        .pipe(map((response) => response.data))
-        .toPromise();
+      // const { data, total } = await res
+      //   .pipe(map((response) => response.data))
+      //   .toPromise();
 
-      // const { data, total } = mockSubscribers;
+      const { data, total } = mockSubscribers;
 
       const subscribersPromise = data.map(async (subscriber: any) => {
         const { twitch_display_picture } = await this.getTwitchUserData({

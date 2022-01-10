@@ -58,5 +58,5 @@ export const mockSubscribers = {
       user_login: 'manguydudebroski',
     },
   ],
-  total: 1,
+  total: 2,
 };
