@@ -308,11 +308,11 @@ export class TwitchService {
         },
       );
 
-      // const { data, total } = await res
-      //   .pipe(map((response) => response.data))
-      //   .toPromise();
+      const { data, total } = await res
+        .pipe(map((response) => response.data))
+        .toPromise();
 
-      const { data, total } = mockSubscribers;
+      // const { data, total } = mockSubscribers;
 
       const subscribersPromise = data.map(async (subscriber: any) => {
         const { twitch_display_picture } = await this.getTwitchUserData({
