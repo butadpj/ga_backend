@@ -25,6 +25,13 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('/twitch-data/:id')
+  @Roles(Role.User, Role.Admin)
+  getUserTwitchData(@Param('id') id: string): Promise<UserDTO> {
+    return this.usersService.getUserTwitchData(Number(id));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('/twitch-videos/:id')
   @Roles(Role.User, Role.Admin)
   getUserTwitchVideos(@Param('id') id: string): Promise<UserDTO> {

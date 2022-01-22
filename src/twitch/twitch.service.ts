@@ -40,12 +40,25 @@ export class TwitchService {
       twitch_email,
     } = await this.getTwitchUserData({ access_token });
 
-    return await this.usersService.updateTwitchUserData({
+    const user = await this.usersService.findUser({ email });
+
+    const userHasExistingTwitchAccount =
+      await this.usersService.hasExistingTwitchAccount(user.id);
+
+    if (userHasExistingTwitchAccount) {
+      return await this.usersService.updateTwitchUserData(email, {
+        twitch_user_id,
+        twitch_display_name,
+        twitch_display_picture,
+        twitch_email,
+      });
+    }
+
+    return await this.usersService.linkTwitchUserData(email, {
       twitch_user_id,
       twitch_display_name,
       twitch_display_picture,
       twitch_email,
-      user_email: email,
     });
   }
 
@@ -54,58 +67,32 @@ export class TwitchService {
     email: string,
     twitch_user_id: string,
   ) {
+    const user = await this.usersService.findUser({ email });
+
     const videos = await this.getTwitchUserVideos({
       access_token,
       twitch_user_id,
     });
 
     if (videos.length > 0) {
-      videos.forEach((video: any) => {
-        const {
-          user_id: twitch_id,
-          stream_id: twitch_stream_id,
-          title,
-          description,
-          url,
-          thumbnail_url,
-          viewable,
-          view_count,
-          type,
-          duration,
-          created_at,
-          published_at,
-        } = video;
-
-        return this.usersService.createTwitchVideo(email, {
-          twitch_id,
-          twitch_stream_id,
-          title,
-          description,
-          url,
-          thumbnail_url,
-          viewable,
-          view_count,
-          type,
-          duration,
-          created_at,
-          published_at,
-        });
-      });
+      return await this.usersService.createTwitchVideos(user.id, videos);
     }
-    return { message: `User has no twitch videos` };
   }
 
   async processUserChannelInformation(
     access_token: string,
     email: string,
-    user_id: string,
+    twitch_user_id: string,
   ) {
-    const followersCount = await this.getUserFollowers(access_token, user_id);
+    const followersCount = await this.getUserFollowers(
+      access_token,
+      twitch_user_id,
+    );
 
-    return await this.processUserTwitchSubscribers(
+    await this.processUserTwitchSubscribers(
       access_token,
       email,
-      user_id,
+      twitch_user_id,
       followersCount,
     );
   }
@@ -113,38 +100,33 @@ export class TwitchService {
   async processUserTwitchSubscribers(
     access_token: string,
     email: string,
-    user_id: string,
+    twitch_user_id: string,
     followersCount: number,
   ): Promise<any> {
+    const user = await this.usersService.findUser({ email });
+
     const {
       error,
       total: subscribersCount,
       subscribers,
-    } = await this.getChannelSubscribers(access_token, user_id);
+    } = await this.getChannelSubscribers(access_token, twitch_user_id);
 
     if (error && error === 'channel not qualified') {
-      return await this.usersService.updateTwitchUserData({
-        user_email: email,
+      return await this.usersService.updateTwitchUserData(email, {
         twitch_channel_qualified: false,
         twitch_followers_count: followersCount,
       });
     }
 
-    const user = await this.usersService.updateTwitchUserData({
-      user_email: email,
+    await this.usersService.updateTwitchUserData(email, {
       twitch_channel_qualified: true,
       twitch_subscribers_count: subscribersCount,
       twitch_followers_count: followersCount,
     });
 
     if (subscribersCount > 0) {
-      subscribers.forEach(
-        async (subscriber: any) =>
-          await this.usersService.createTwitchSubscriber(email, subscriber),
-      );
+      this.usersService.createTwitchSubscribers(user.id, subscribers);
     }
-
-    return user;
   }
 
   async processTopGamingStreams(access_token: string) {

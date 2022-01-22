@@ -54,9 +54,7 @@ export class AuthService {
       isEmailConfirmed: user.isEmailConfirmed,
     };
 
-    const loggedInUser = await this.usersService.findUser({ id: user.id });
-
-    const hasTwitch = this.usersService.hasExistingTwitchAccount(loggedInUser);
+    const hasTwitch = this.usersService.hasExistingTwitchAccount(user.id);
 
     if (hasTwitch) this.usersService.autoUnlinkTwitchAccount(user.email);
 

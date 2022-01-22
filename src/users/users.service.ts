@@ -6,12 +6,15 @@ import { User } from '@users/entity/user.entity';
 import * as bcrypt from 'bcrypt';
 import { UserTwitchVideo } from './entity/user-twitch-video.entity';
 import { UserTwitchSubscribers } from './entity/user-twitch-subscribers';
+import { UserTwitchData } from './entity/user-twitch-data';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(UserTwitchData)
+    private userTwitchDataRepository: Repository<UserTwitchData>,
     @InjectRepository(UserTwitchVideo)
     private userTwitchVideosRepository: Repository<UserTwitchVideo>,
     @InjectRepository(UserTwitchSubscribers)
@@ -23,8 +26,36 @@ export class UsersService {
   }
 
   async findUser({ id, email }: any): Promise<UserDTO | undefined> {
-    if (email) return await this.usersRepository.findOne({ where: { email } });
-    return await this.usersRepository.findOne({ where: { id } });
+    if (email) {
+      const user = await this.usersRepository.findOne({ where: { email } });
+
+      if (!user) {
+        throw new UnprocessableEntityException(
+          {
+            statusCode: 422,
+            message: `Cannot find user with an email of ${email}`,
+            error: 'Unprocessable Entity',
+          },
+          `User doesn't exist`,
+        );
+      }
+
+      return user;
+    }
+    const user = await this.usersRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new UnprocessableEntityException(
+        {
+          statusCode: 422,
+          message: `Cannot find user with an id of ${id}`,
+          error: 'Unprocessable Entity',
+        },
+        `User doesn't exist`,
+      );
+    }
+
+    return user;
   }
 
   async hashPassword(password: string): Promise<string> {
@@ -33,30 +64,31 @@ export class UsersService {
   }
 
   async createUser(credentials: CreateUserDTO): Promise<any> {
-    let user = await this.findUser({ email: credentials.email });
+    /* 
+      findUser() throws an error if user is not found.
+      So we'll just use the catch() to create the user
+      there, since we know that the user doesn't exist yet
+    */
 
-    if (user) {
-      throw new UnprocessableEntityException(
-        {
-          statusCode: 422,
-          message: 'User already exist',
-          error: 'Unprocessable Entity',
-        },
-        'Duplicate email not allowed',
-      );
-    }
+    return await this.findUser({ email: credentials.email })
+      .then(() => {
+        throw new UnprocessableEntityException(
+          {
+            statusCode: 422,
+            message: 'User already exist',
+            error: 'Unprocessable Entity',
+          },
+          'Duplicate email not allowed',
+        );
+      })
+      .catch(async () => {
+        const createdUser = this.usersRepository.create({
+          email: credentials.email,
+          password: await this.hashPassword(credentials.password),
+        });
 
-    user = this.usersRepository.create({
-      email: credentials.email,
-      password: await this.hashPassword(credentials.password),
-    });
-
-    const result = await this.usersRepository.save({
-      email: user.email,
-      password: user.password,
-    });
-
-    return { id: result.id, email: result.email };
+        return await this.usersRepository.save(createdUser);
+      });
   }
 
   async markEmailAsConfirmed(email: string) {
@@ -70,197 +102,112 @@ export class UsersService {
     return await this.findUser({ email: email });
   }
 
-  async getUserTwitchVideos(userId: number): Promise<any> {
+  async getUserTwitchData(userId: number): Promise<any> {
     const user = await this.findUser({ id: userId });
 
-    if (!user) {
+    const userTwitchData = await this.userTwitchDataRepository.findOne({
+      where: { user: user.id },
+    });
+
+    if (!userTwitchData) {
       throw new UnprocessableEntityException(
         {
           statusCode: 422,
-          message: `Cannot find user with an id of ${userId}`,
+          message: `No twitch account linked to this user`,
           error: 'Unprocessable Entity',
         },
-        `User doesn't exist`,
+        `No twitch account linked to the user`,
       );
     }
 
-    return this.userTwitchVideosRepository.find({ where: { user: userId } });
+    return userTwitchData;
+  }
+
+  async getUserTwitchVideos(userId: number): Promise<any> {
+    const user = await this.findUser({ id: userId });
+
+    const userTwitchData = await this.getUserTwitchData(user.id);
+
+    return this.userTwitchVideosRepository.find({
+      where: { twitch_data: userTwitchData.id },
+    });
   }
 
   async getUserTwitchSubscribers(userId: number): Promise<any> {
     const user = await this.findUser({ id: userId });
 
-    if (!user) {
-      throw new UnprocessableEntityException(
-        {
-          statusCode: 422,
-          message: `Cannot find user with an id of ${userId}`,
-          error: 'Unprocessable Entity',
-        },
-        `User doesn't exist`,
-      );
-    }
+    const userTwitchData = await this.getUserTwitchData(user.id);
 
     return this.userTwitchSubscribersRepository.find({
-      where: { user: userId },
+      where: { twitch_data: userTwitchData.id },
     });
   }
 
-  async createTwitchVideo(
-    email: string,
-    {
-      twitch_id,
-      twitch_stream_id,
-      title,
-      description,
-      url,
-      thumbnail_url,
-      viewable,
-      view_count,
-      type,
-      duration,
-      created_at,
-      published_at,
-    },
+  async createTwitchVideos(
+    userId: number,
+    twitch_videos: Array<any>,
   ): Promise<any> {
+    const userTwitchData = await this.getUserTwitchData(userId);
+
+    const twitchVideos = this.userTwitchVideosRepository.create(twitch_videos);
+
+    await this.userTwitchVideosRepository.insert(twitchVideos);
+
+    userTwitchData.twitch_videos = twitchVideos;
+
+    await this.userTwitchDataRepository.save(userTwitchData);
+
+    return await this.getUserTwitchVideos(userId);
+  }
+
+  async createTwitchSubscribers(
+    userId: number,
+    subscribers: Array<any>,
+  ): Promise<any> {
+    const userTwitchData = await this.getUserTwitchData(userId);
+
+    const createdSubscribers =
+      this.userTwitchSubscribersRepository.create(subscribers);
+
+    await this.userTwitchSubscribersRepository.insert(createdSubscribers);
+
+    userTwitchData.twitch_subscribers = createdSubscribers;
+
+    await this.userTwitchDataRepository.save(userTwitchData);
+
+    return await this.getUserTwitchSubscribers(userId);
+  }
+
+  async linkTwitchUserData(email: string, twitchData: any): Promise<any> {
     const user = await this.findUser({ email });
 
-    if (!user) {
-      throw new UnprocessableEntityException(
-        {
-          statusCode: 422,
-          message: `Cannot find user with an email of ${email}`,
-          error: 'Unprocessable Entity',
-        },
-        `User doesn't exist`,
-      );
-    }
-
-    const twitchVideo = this.userTwitchVideosRepository.create({
-      twitch_id,
-      twitch_stream_id,
-      title,
-      description,
-      url,
-      thumbnail_url,
-      viewable,
-      view_count,
-      type,
-      duration,
-      created_at,
-      published_at,
+    const newUserTwitchData = this.userTwitchDataRepository.create({
+      user: user.id,
+      ...twitchData,
     });
 
-    await this.userTwitchVideosRepository.save(twitchVideo);
+    await this.userTwitchDataRepository.save(newUserTwitchData);
 
-    user.twitch_videos = [twitchVideo];
-
-    return this.usersRepository.save(user);
+    return await this.getUserTwitchData(user.id);
   }
 
-  async createTwitchSubscriber(
-    email: string,
-    {
-      twitch_id,
-      subscriber_id,
-      subscriber_name,
-      subscriber_display_picture,
-      is_gift,
-    },
-  ): Promise<any> {
+  async updateTwitchUserData(email: string, updateFields: any): Promise<any> {
     const user = await this.findUser({ email });
 
-    if (!user) {
-      throw new UnprocessableEntityException(
-        {
-          statusCode: 422,
-          message: `Cannot find user with an email of ${email}`,
-          error: 'Unprocessable Entity',
-        },
-        `User doesn't exist`,
-      );
-    }
+    const userTwitchData = await this.getUserTwitchData(user.id);
 
-    const twitchSubscriber = this.userTwitchSubscribersRepository.create({
-      twitch_id,
-      subscriber_id,
-      subscriber_name,
-      subscriber_display_picture,
-      is_gift,
-    });
-
-    await this.userTwitchSubscribersRepository.save(twitchSubscriber);
-
-    user.twitch_subscribers = [twitchSubscriber];
-
-    return this.usersRepository.save(user);
-  }
-
-  async updateTwitchUserData(data: any): Promise<any> {
-    const user = await this.findUser({ email: data.user_email });
-    const { user_email, ...update_fields } = data;
-
-    if (!user) {
-      throw new UnprocessableEntityException(
-        {
-          statusCode: 422,
-          message: `Cannot find user with an email of ${data.user_email}`,
-          error: 'Unprocessable Entity',
-        },
-        `User doesn't exist`,
-      );
-    }
-
-    await this.usersRepository.update(
-      { email: data.user_email },
-      update_fields,
+    await this.userTwitchDataRepository.update(
+      { id: userTwitchData.id },
+      updateFields,
     );
 
-    return await this.findUser({ email: user_email });
+    return await this.findUser({ email });
   }
 
   async unlinkTwitchUserData(userId: number): Promise<any> {
-    const user = await this.findUser({ id: userId });
+    const userTwitchData = await this.getUserTwitchData(userId);
 
-    if (!user) {
-      throw new UnprocessableEntityException(
-        {
-          statusCode: 422,
-          message: `Cannot find user with an id of ${userId}`,
-          error: 'Unprocessable Entity',
-        },
-        `User doesn't exist`,
-      );
-    }
-
-    await this.usersRepository.update(
-      { id: userId },
-      {
-        twitch_user_id: null,
-        twitch_display_name: null,
-        twitch_email: null,
-        twitch_display_picture: null,
-        twitch_followers_count: null,
-        twitch_subscribers_count: null,
-        twitch_channel_qualified: null,
-      },
-    );
-
-    const userTwitchVideos = await this.getUserTwitchVideos(userId);
-
-    if (userTwitchVideos.length > 0) {
-      userTwitchVideos.map((video: any) => {
-        this.userTwitchVideosRepository.delete(video);
-      });
-    }
-
-    const userTwitchSubscribers = await this.getUserTwitchSubscribers(userId);
-
-    if (userTwitchSubscribers.length > 0) {
-      userTwitchSubscribers.map((subscriber: any) => {
-        this.userTwitchSubscribersRepository.delete(subscriber);
-      });
-    }
+    this.userTwitchDataRepository.delete(userTwitchData);
 
     return await this.findUser({ id: userId });
   }
@@ -276,8 +223,13 @@ export class UsersService {
     }, 1800000); // 30 mins
   }
 
-  hasExistingTwitchAccount(loggedInUser: UserDTO): boolean {
-    if (loggedInUser.twitch_user_id) return true;
-    return false;
+  async hasExistingTwitchAccount(userId: number): Promise<boolean> {
+    return await this.getUserTwitchData(userId)
+      .then((data) => {
+        return true;
+      })
+      .catch((error) => {
+        return false;
+      });
   }
 }
