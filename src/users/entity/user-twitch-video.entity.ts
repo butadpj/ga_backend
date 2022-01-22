@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { User } from './user.entity';
+import { UserTwitchData } from './user-twitch-data';
 
 @Entity()
 export class UserTwitchVideo {
@@ -42,6 +42,6 @@ export class UserTwitchVideo {
   @Column()
   duration: string;
 
-  @ManyToOne(() => User, (user) => user.twitch_videos)
-  user: User;
+  @ManyToOne(() => UserTwitchData, (twitch_data) => twitch_data.twitch_videos)
+  twitch_data: UserTwitchData;
 }

@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { User } from './user.entity';
+import { UserTwitchData } from './user-twitch-data';
 
 @Entity()
 export class UserTwitchSubscribers {
@@ -21,6 +21,10 @@ export class UserTwitchSubscribers {
   @Column()
   is_gift: boolean;
 
-  @ManyToOne(() => User, (user) => user.twitch_subscribers)
-  user: User;
+  @ManyToOne(
+    () => UserTwitchData,
+    (twitch_data) => twitch_data.twitch_subscribers,
+    { onDelete: 'CASCADE' },
+  )
+  twitch_data: UserTwitchData;
 }
