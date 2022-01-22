@@ -19,17 +19,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const user = await this.usersService.findUser({ email });
 
-    if (!user) {
-      throw new NotFoundException(
-        {
-          statusCode: 404,
-          message: `User doesn't exist`,
-          error: 'Not found exception',
-        },
-        'User not found',
-      );
-    }
-
     return {
       id: user.id,
       email: user.email,
