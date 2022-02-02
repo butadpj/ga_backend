@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { UserTwitchSubscribers } from './user-twitch-subscribers';
 import { UserTwitchVideo } from './user-twitch-video.entity';
-import { User } from './user.entity';
+import { User } from '@users/entity/user.entity';
 
 @Entity()
 export class UserTwitchData {

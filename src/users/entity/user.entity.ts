@@ -1,6 +1,7 @@
 import { Role } from '@users/roles/role.enum';
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from 'typeorm';
-import { UserTwitchData } from './user-twitch-data';
+import { UserTwitchData } from '@twitch/entity/user-twitch-data';
+import { UserYoutubeData } from '@youtube/entity/user-youtube-data';
 
 @Entity()
 export class User {
@@ -23,4 +24,9 @@ export class User {
     onDelete: 'CASCADE',
   })
   twitch_data: UserTwitchData;
+
+  @OneToOne(() => UserTwitchData, (youtube_data) => youtube_data.user, {
+    onDelete: 'CASCADE',
+  })
+  youtube_data: UserYoutubeData;
 }
