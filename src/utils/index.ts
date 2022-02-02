@@ -1,2 +1,1 @@
-export { twitchAuthForwardUrl } from './twitchAuthForwardUrl';
-export { randomString } from './randomString';
+export { separateByComma } from './separateByComma';

@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { TwitchModule } from './twitch/twitch.module';
 import { EmailModule } from './email/email.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { YoutubeModule } from './youtube/youtube.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     TwitchModule,
     EmailModule,
     ScheduleModule.forRoot(),
+    YoutubeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

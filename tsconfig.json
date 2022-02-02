@@ -18,7 +18,9 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@users/*": ["src/users/*"]
+      "@users/*": ["src/users/*"],
+      "@twitch/*": ["src/twitch/*"],
+      "@youtube/*": ["src/youtube/*"]
     }
   }
 }

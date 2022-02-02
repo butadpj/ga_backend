@@ -4,9 +4,9 @@ import { Repository } from 'typeorm';
 import { CreateUserDTO, UserDTO } from './dto';
 import { User } from '@users/entity/user.entity';
 import * as bcrypt from 'bcrypt';
-import { UserTwitchVideo } from './entity/user-twitch-video.entity';
-import { UserTwitchSubscribers } from './entity/user-twitch-subscribers';
-import { UserTwitchData } from './entity/user-twitch-data';
+import { UserTwitchVideo } from '@twitch/entity/user-twitch-video.entity';
+import { UserTwitchSubscribers } from '@twitch/entity/user-twitch-subscribers';
+import { UserTwitchData } from '@twitch/entity/user-twitch-data';
 
 @Injectable()
 export class UsersService {

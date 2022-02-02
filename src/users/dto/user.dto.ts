@@ -1,4 +1,4 @@
-import { UserTwitchData } from '@users/entity/user-twitch-data';
+import { UserTwitchData } from '@twitch/entity/user-twitch-data';
 import { Role } from '@users/roles/role.enum';
 
 export class UserDTO {
