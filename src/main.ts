@@ -11,7 +11,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'https://staging.game-antena.com',
-      'https://game-antena.com',
+      'https://www.game-antena.com',
     ],
   });
   await app.listen(port);
