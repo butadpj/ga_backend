@@ -7,7 +7,8 @@ import { UserTwitchData } from './entity/user-twitch-data';
 import { UserTwitchSubscribers } from './entity/user-twitch-subscribers';
 import { UserTwitchVideo } from './entity/user-twitch-video.entity';
 import { TwitchController } from './twitch.controller';
-import { TwitchService } from './twitch.service';
+import { TwitchService } from './services/twitch.service';
+import { FetchDataService } from './services/fetch-data.service';
 
 @Module({
   imports: [
@@ -24,6 +25,6 @@ import { TwitchService } from './twitch.service';
     ]),
   ],
   controllers: [TwitchController],
-  providers: [TwitchService],
+  providers: [TwitchService, FetchDataService],
 })
 export class TwitchModule {}
