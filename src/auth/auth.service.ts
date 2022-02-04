@@ -4,7 +4,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDTO, LoginUserDTO, UserDTO } from '../users/dto';
-import { UsersService } from '../users/users.service';
+import { UsersService } from '@users/services/users.service';
+import { UsersTwitchDataService } from '@users/services/users-twitch-data.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 
@@ -12,6 +13,7 @@ import { JwtService } from '@nestjs/jwt';
 export class AuthService {
   constructor(
     private usersService: UsersService,
+    private usersTwitchDataService: UsersTwitchDataService,
     private jwtService: JwtService,
   ) {}
 
@@ -54,9 +56,11 @@ export class AuthService {
       isEmailConfirmed: user.isEmailConfirmed,
     };
 
-    const hasTwitch = this.usersService.hasExistingTwitchAccount(user.id);
+    const hasTwitch =
+      await this.usersTwitchDataService.hasExistingTwitchAccount(user.id);
 
-    if (hasTwitch) this.usersService.autoUnlinkTwitchAccount(user.email);
+    if (hasTwitch)
+      this.usersTwitchDataService.autoUnlinkTwitchAccount(user.email);
 
     return {
       ...payload,
