@@ -1,4 +1,3 @@
-import { HttpService } from '@nestjs/axios';
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -8,14 +7,12 @@ import { UserTwitchData } from '@twitch/entity/user-twitch-data';
 import { UserTwitchSubscribers } from '@twitch/entity/user-twitch-subscribers';
 import { UserTwitchVideo } from '@twitch/entity/user-twitch-video.entity';
 
-import { map } from 'rxjs';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class UsersTwitchDataService {
   constructor(
     private usersService: UsersService,
-    private httpService: HttpService,
 
     @InjectRepository(UserTwitchData)
     private userTwitchDataRepository: Repository<UserTwitchData>,
@@ -127,7 +124,7 @@ export class UsersTwitchDataService {
     return await this.getUserTwitchData(user.id);
   }
 
-  async unlinkUserTwitchData(userId: number): Promise<any> {
+  async deleteUserTwitchData(userId: number): Promise<any> {
     const userTwitchData = await this.getUserTwitchData(userId);
 
     this.userTwitchDataRepository.delete(userTwitchData);
@@ -139,7 +136,7 @@ export class UsersTwitchDataService {
     const { id } = await this.usersService.findUser({ email });
 
     setTimeout(async () => {
-      const { email } = await this.unlinkUserTwitchData(id);
+      const { email } = await this.deleteUserTwitchData(id);
       console.log(
         `User-${email}'s twitch account has been automatically logged out`,
       );

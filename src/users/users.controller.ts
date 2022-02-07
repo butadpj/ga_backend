@@ -5,6 +5,7 @@ import { Role } from './roles/role.enum';
 import { Roles } from './roles/roles.decorator';
 import { RolesGuard } from './roles/roles.guard';
 import { UsersTwitchDataService } from './services/users-twitch-data.service';
+import { UsersYoutubeDataService } from './services/users-youtube-data.service';
 import { UsersService } from './services/users.service';
 
 @Controller('users')
@@ -12,6 +13,7 @@ export class UsersController {
   constructor(
     private usersService: UsersService,
     private usersTwitchDataService: UsersTwitchDataService,
+    private usersYoutubeDataService: UsersYoutubeDataService,
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -58,6 +60,27 @@ export class UsersController {
   @Get('/unlink-twitch/:id')
   @Roles(Role.User, Role.Admin)
   unLinkTwitchAccount(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersTwitchDataService.unlinkUserTwitchData(Number(id));
+    return this.usersTwitchDataService.deleteUserTwitchData(Number(id));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('/youtube-data/:id')
+  @Roles(Role.User, Role.Admin)
+  getUserYoutubeData(@Param('id') id: string): Promise<UserDTO> {
+    return this.usersYoutubeDataService.getUserYoutubeData(Number(id));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('/youtube-subscribers/:id')
+  @Roles(Role.User, Role.Admin)
+  getUserYoutubeSubscribers(@Param('id') id: string): Promise<UserDTO> {
+    return this.usersYoutubeDataService.getUserYoutubeSubscribers(Number(id));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('/unlink-youtube/:id')
+  @Roles(Role.User, Role.Admin)
+  unLinkYoutubeAccount(@Param('id') id: string): Promise<UserDTO> {
+    return this.usersYoutubeDataService.deleteUserYoutubeData(Number(id));
   }
 }

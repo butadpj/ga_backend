@@ -1,11 +1,11 @@
 import { Controller, Get, Query, Redirect } from '@nestjs/common';
-import { YoutubeService } from './youtube.service';
+import { YoutubeService } from './services/youtube.service';
 
 @Controller('youtube')
 export class YoutubeController {
   constructor(private youtubeService: YoutubeService) {}
 
-  // @Redirect(`${process.env.CLIENT_HOST}/youtube-gaming`)
+  @Redirect(`${process.env.CLIENT_HOST}/youtube-gaming`)
   @Get('/auth')
   processTwitchAuth(
     @Query() { code, scope, state }: any,
