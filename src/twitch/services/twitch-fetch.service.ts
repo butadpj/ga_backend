@@ -7,7 +7,7 @@ import { map } from 'rxjs';
 import { mockSubscribers } from 'src/utils/mockData';
 
 @Injectable()
-export class FetchDataService {
+export class TwitchFetchService {
   constructor(private httpService: HttpService) {}
 
   async fetchUserTwitchData({

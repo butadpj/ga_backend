@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UsersTwitchDataService } from '@users/services/users-twitch-data.service';
 import { UsersService } from '@users/services/users.service';
-import { FetchDataService } from './fetch-data.service';
+import { TwitchFetchService } from './twitch-fetch.service';
 
 @Injectable()
 export class TwitchService {
@@ -9,11 +9,11 @@ export class TwitchService {
     private usersService: UsersService,
     private usersTwitchDataService: UsersTwitchDataService,
 
-    private fetchDataService: FetchDataService,
+    private twitchFetchService: TwitchFetchService,
   ) {}
 
   async processTwitchAuth(code: string, email: string): Promise<any> {
-    const access_token = await this.fetchDataService.fetchTwitchOAuthToken(
+    const access_token = await this.twitchFetchService.fetchTwitchOAuthToken(
       code,
     );
     if (!access_token) throw new Error('Invalid or undefined access_token');
@@ -40,7 +40,7 @@ export class TwitchService {
       twitch_display_name,
       twitch_display_picture,
       twitch_email,
-    } = await this.fetchDataService.fetchUserTwitchData({ access_token });
+    } = await this.twitchFetchService.fetchUserTwitchData({ access_token });
 
     const user = await this.usersService.findUser({ email });
 
@@ -71,7 +71,7 @@ export class TwitchService {
   ) {
     const user = await this.usersService.findUser({ email });
 
-    const videos = await this.fetchDataService.fetchUserTwitchVideos({
+    const videos = await this.twitchFetchService.fetchUserTwitchVideos({
       access_token,
       twitch_user_id,
     });
@@ -89,7 +89,7 @@ export class TwitchService {
     email: string,
     twitch_user_id: string,
   ) {
-    const followersCount = await this.fetchDataService.fetchUserFollowers(
+    const followersCount = await this.twitchFetchService.fetchUserFollowers(
       access_token,
       twitch_user_id,
     );
@@ -114,7 +114,7 @@ export class TwitchService {
       error,
       total: subscribersCount,
       subscribers,
-    } = await this.fetchDataService.fetchChannelSubscribers(
+    } = await this.twitchFetchService.fetchChannelSubscribers(
       access_token,
       twitch_user_id,
     );
@@ -138,10 +138,10 @@ export class TwitchService {
   }
 
   async processTopGamingStreams(access_token: string) {
-    const topGames = await this.fetchDataService.fetchTopGames(access_token);
+    const topGames = await this.twitchFetchService.fetchTopGames(access_token);
 
     const game_streams = await topGames.map(async (game: any) => {
-      const streams = await this.fetchDataService.fetchTopGamingStreams(
+      const streams = await this.twitchFetchService.fetchTopGamingStreams(
         game.id,
         access_token,
       );
