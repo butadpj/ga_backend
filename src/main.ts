@@ -12,6 +12,7 @@ async function bootstrap() {
       'http://localhost:3000',
       'https://staging.game-antena.com',
       'https://www.game-antena.com',
+      'https://game-antena.com',
     ],
   });
   await app.listen(port);
