@@ -7,9 +7,6 @@ export class UserYoutubeSubscribers {
   id: number;
 
   @Column()
-  youtube_user_id: string;
-
-  @Column()
   subscriber_id: string;
 
   @Column()
