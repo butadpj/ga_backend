@@ -8,11 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://staging.game-antena.com',
-      'https://www.game-antena.com',
-    ],
+    origin: [process.env.CLIENT_HOST],
   });
   await app.listen(port);
 
