@@ -2,7 +2,8 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { UsersModule } from '@users/users.module';
 import { YoutubeController } from './youtube.controller';
-import { YoutubeService } from './youtube.service';
+import { YoutubeService } from './services/youtube.service';
+import { YoutubeFetchService } from './services/youtube-fetch.service';
 
 @Module({
   imports: [
@@ -13,6 +14,6 @@ import { YoutubeService } from './youtube.service';
     }),
   ],
   controllers: [YoutubeController],
-  providers: [YoutubeService],
+  providers: [YoutubeService, YoutubeFetchService],
 })
 export class YoutubeModule {}

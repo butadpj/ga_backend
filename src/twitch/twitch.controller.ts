@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Redirect } from '@nestjs/common';
-import { TwitchService } from './twitch.service';
+import { TwitchService } from './services/twitch.service';
 
 @Controller('twitch')
 export class TwitchController {

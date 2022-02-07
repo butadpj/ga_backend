@@ -22,9 +22,6 @@ export class UserYoutubeData {
   youtube_display_name: string;
 
   @Column({ nullable: true })
-  youtube_email: string;
-
-  @Column({ nullable: true })
   youtube_display_picture: string;
 
   @Column({ nullable: true })

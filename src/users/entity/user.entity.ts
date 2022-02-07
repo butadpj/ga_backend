@@ -25,7 +25,7 @@ export class User {
   })
   twitch_data: UserTwitchData;
 
-  @OneToOne(() => UserTwitchData, (youtube_data) => youtube_data.user, {
+  @OneToOne(() => UserYoutubeData, (youtube_data) => youtube_data.user, {
     onDelete: 'CASCADE',
   })
   youtube_data: UserYoutubeData;
