@@ -1,4 +1,8 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDTO, UserDTO } from '../dto';
@@ -16,7 +20,13 @@ export class UsersService {
     return await this.usersRepository.find();
   }
 
-  async findUser({ id, email }: any): Promise<UserDTO> {
+  async findUser({
+    id,
+    email,
+  }: {
+    id?: number;
+    email?: string;
+  }): Promise<UserDTO> {
     if (email) {
       const user = await this.usersRepository.findOne({ where: { email } });
 
@@ -80,6 +90,25 @@ export class UsersService {
 
         return await this.usersRepository.save(createdUser);
       });
+  }
+
+  async deleteUser(userId: number): Promise<any> {
+    const user = await this.findUser({ id: userId });
+
+    if (user) {
+      await this.usersRepository.delete(user);
+
+      return {
+        message: `Good bye ${user.email} 👋. Till we meet again!`,
+      };
+    }
+
+    throw new NotFoundException(
+      {
+        message: `User with an id of ${userId} doesn't exist`,
+      },
+      'User not exist',
+    );
   }
 
   async markEmailAsConfirmed(email: string) {

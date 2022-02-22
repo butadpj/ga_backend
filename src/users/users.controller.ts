@@ -36,6 +36,13 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User, Role.Admin)
+  @Get('/delete/:id')
+  async deleteUser(@Param('id') id: string): Promise<any> {
+    return this.usersService.deleteUser(Number(id));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('/twitch-data/:id')
   @Roles(Role.User, Role.Admin)
   getUserTwitchData(@Param('id') id: string): Promise<UserDTO> {
