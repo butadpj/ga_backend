@@ -1,4 +1,14 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserDTO } from './dto';
 import { Role } from './roles/role.enum';
@@ -33,6 +43,28 @@ export class UsersController {
     });
 
     return rest;
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post(':id/upload-profile-picture')
+  @Roles(Role.User, Role.Admin)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadProfilePicture(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<any> {
+    return await this.usersService.uploadProfilePicture(Number(id), {
+      buffer: file.buffer,
+      contentType: file.mimetype,
+      fileName: file.originalname,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete(':id/delete-profile-picture')
+  @Roles(Role.User, Role.Admin)
+  async deleteProfilePicture(@Param('id') id: string): Promise<any> {
+    return await this.usersService.deleteProfilePicture(Number(id));
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

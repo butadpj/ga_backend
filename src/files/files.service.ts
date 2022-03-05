@@ -4,7 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { PublicFile } from './entity/public-file';
 import { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
-import { getS3WithLinodeConfig } from 'src/utils';
 import { S3 } from 'aws-sdk';
 
 @Injectable()
@@ -13,8 +12,6 @@ export class FilesService {
     @InjectRepository(PublicFile)
     private publicFilesRepository: Repository<PublicFile>,
   ) {}
-
-  privates3 = getS3WithLinodeConfig();
 
   async uploadFileToS3(
     dataBuffer: Buffer,

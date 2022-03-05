@@ -17,6 +17,7 @@ import { UserYoutubeSubscribers } from '@youtube/entity/user-youtube-subscribers
 import { UserYoutubeVideo } from '@youtube/entity/user-youtube-video.entity';
 import { HttpModule } from '@nestjs/axios';
 import { UsersYoutubeDataService } from './services/users-youtube-data.service';
+import { FilesModule } from '@files/files.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UsersYoutubeDataService } from './services/users-youtube-data.service';
       UserYoutubeSubscribers,
       UserYoutubeVideo,
     ]),
+    FilesModule,
   ],
   controllers: [UsersController],
   providers: [UsersService, UsersTwitchDataService, UsersYoutubeDataService],
