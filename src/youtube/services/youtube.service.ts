@@ -67,9 +67,13 @@ export class YoutubeService {
     const userHasExistingYoutubeAccount =
       await this.usersYoutubeDataService.hasExistingYoutubeAccount(user.id);
 
+    this.usersService.updateUser(user.id, {
+      displayName: youtubeData.youtube_display_name,
+    });
+
     if (userHasExistingYoutubeAccount) {
       return await this.usersYoutubeDataService.updateUserYoutubeData(
-        email,
+        user.id,
         youtubeData,
       );
     }

@@ -48,17 +48,15 @@ export class UsersYoutubeDataService {
     });
   }
 
-  async updateUserYoutubeData(email: string, updateFields: any): Promise<any> {
-    const user = await this.usersService.findUser({ email });
-
-    const userYoutubeData = await this.getUserYoutubeData(user.id);
+  async updateUserYoutubeData(userId: number, updateFields: any): Promise<any> {
+    const userYoutubeData = await this.getUserYoutubeData(userId);
 
     await this.userYoutubeDataRepository.update(
       { id: userYoutubeData.id },
       updateFields,
     );
 
-    return await this.usersService.findUser({ email });
+    return await this.usersService.findUser({ id: userId });
   }
 
   async linkUserYoutubeData(email: string, youtubeData: any): Promise<any> {

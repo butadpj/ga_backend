@@ -44,11 +44,15 @@ export class TwitchService {
 
     const user = await this.usersService.findUser({ email });
 
+    await this.usersService.updateUser(user.id, {
+      displayName: twitch_display_name,
+    });
+
     const userHasExistingTwitchAccount =
       await this.usersTwitchDataService.hasExistingTwitchAccount(user.id);
 
     if (userHasExistingTwitchAccount) {
-      return await this.usersTwitchDataService.updateUserTwitchData(email, {
+      return await this.usersTwitchDataService.updateUserTwitchData(user.id, {
         twitch_user_id,
         twitch_display_name,
         twitch_display_picture,
@@ -120,13 +124,13 @@ export class TwitchService {
     );
 
     if (error && error === 'channel not qualified') {
-      return await this.usersTwitchDataService.updateUserTwitchData(email, {
+      return await this.usersTwitchDataService.updateUserTwitchData(user.id, {
         twitch_channel_qualified: false,
         twitch_followers_count: followersCount,
       });
     }
 
-    await this.usersTwitchDataService.updateUserTwitchData(email, {
+    await this.usersTwitchDataService.updateUserTwitchData(user.id, {
       twitch_channel_qualified: true,
       twitch_subscribers_count: subscribersCount,
       twitch_followers_count: followersCount,
@@ -138,20 +142,26 @@ export class TwitchService {
   }
 
   async processTopGamingStreams(access_token: string) {
-    const topGames = await this.twitchFetchService.fetchTopGames(access_token);
-
-    const game_streams = await topGames.map(async (game: any) => {
-      const streams = await this.twitchFetchService.fetchTopGamingStreams(
-        game.id,
+    try {
+      const topGames = await this.twitchFetchService.fetchTopGames(
         access_token,
       );
-      return {
-        game: game.name,
-        streams,
-      };
-    });
 
-    // Wait for all game_streams to be fetched completely then return them
-    return await Promise.all(game_streams).then((result) => result);
+      const game_streams = await topGames.map(async (game: any) => {
+        const streams = await this.twitchFetchService.fetchTopGamingStreams(
+          game.id,
+          access_token,
+        );
+        return {
+          game: game.name,
+          streams,
+        };
+      });
+
+      // Wait for all game_streams to be fetched completely then return them
+      return await Promise.all(game_streams).then((result) => result);
+    } catch (error) {
+      console.log(error.response);
+    }
   }
 }

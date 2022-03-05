@@ -98,17 +98,15 @@ export class UsersTwitchDataService {
     return await this.getUserTwitchSubscribers(userId);
   }
 
-  async updateUserTwitchData(email: string, updateFields: any): Promise<any> {
-    const user = await this.usersService.findUser({ email });
-
-    const userTwitchData = await this.getUserTwitchData(user.id);
+  async updateUserTwitchData(userId: number, updateFields: any): Promise<any> {
+    const userTwitchData = await this.getUserTwitchData(userId);
 
     await this.userTwitchDataRepository.update(
       { id: userTwitchData.id },
       updateFields,
     );
 
-    return await this.usersService.findUser({ email });
+    return await this.usersService.findUser({ id: userId });
   }
 
   async linkUserTwitchData(email: string, twitchData: any): Promise<any> {
