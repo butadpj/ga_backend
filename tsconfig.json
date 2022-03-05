@@ -20,7 +20,8 @@
     "paths": {
       "@users/*": ["src/users/*"],
       "@twitch/*": ["src/twitch/*"],
-      "@youtube/*": ["src/youtube/*"]
+      "@youtube/*": ["src/youtube/*"],
+      "@files/*": ["src/files/*"]
     }
   }
 }
