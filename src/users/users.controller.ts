@@ -4,12 +4,14 @@ import {
   Get,
   Param,
   Post,
+  UnprocessableEntityException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { isValidImage } from 'src/utils';
 import { UserDTO } from './dto';
 import { Role } from './roles/role.enum';
 import { Roles } from './roles/roles.decorator';
@@ -53,11 +55,21 @@ export class UsersController {
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<any> {
-    return await this.usersService.uploadProfilePicture(Number(id), {
-      buffer: file.buffer,
-      contentType: file.mimetype,
-      fileName: file.originalname,
-    });
+    if (isValidImage(file)) {
+      return await this.usersService.uploadProfilePicture(Number(id), {
+        buffer: file.buffer,
+        contentType: file.mimetype,
+        fileName: file.originalname,
+      });
+    }
+    throw new UnprocessableEntityException(
+      {
+        statusCode: 422,
+        message: `Uploaded file is not a valid image`,
+        error: 'Unprocessable Entity',
+      },
+      `File not a valid image`,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
