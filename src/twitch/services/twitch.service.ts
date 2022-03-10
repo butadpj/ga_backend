@@ -44,9 +44,10 @@ export class TwitchService {
 
     const user = await this.usersService.findUser({ email });
 
-    await this.usersService.updateUser(user.id, {
-      displayName: twitch_display_name,
-    });
+    if (!user.displayName)
+      await this.usersService.updateUserInfo(user.id, {
+        displayName: twitch_display_name,
+      });
 
     const userHasExistingTwitchAccount =
       await this.usersTwitchDataService.hasExistingTwitchAccount(user.id);

@@ -95,10 +95,57 @@ export class UsersService {
       });
   }
 
-  async updateUser(userId: number, updateFields: UpdateUserDTO): Promise<any> {
-    await this.usersRepository.update({ id: userId }, updateFields);
+  // Critical  info can't be updated by this function
+  async updateUserInfo(
+    userId: number,
+    updateFields: UpdateUserDTO,
+  ): Promise<any> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { email, password, role, isEmailConfirmed, ...exceptCriticalInfo } =
+      updateFields;
 
-    return await this.findUser({ id: userId });
+    // If picture is not coming from Object Storage (without key)
+    if (
+      exceptCriticalInfo.profilePicture &&
+      !exceptCriticalInfo.profilePicture.key
+    ) {
+      const user = await this.findUser({ id: userId });
+
+      if (user.profilePicture) {
+        await this.usersRepository.update(
+          { id: userId },
+          { profilePicture: null },
+        );
+
+        if (user.profilePicture.key) {
+          await this.filesService.deletePublicFile(user.profilePicture.id);
+        } else {
+          await this.filesService.deletePublicFile(
+            user.profilePicture.id,
+            false,
+          );
+        }
+      }
+
+      const createdProfilePicture =
+        await this.filesService.createProfilePicture({
+          url: exceptCriticalInfo.profilePicture.url,
+          key: null,
+        });
+
+      await this.usersRepository.update(
+        { id: userId },
+        {
+          displayName: exceptCriticalInfo.displayName,
+          profilePicture: createdProfilePicture,
+        },
+      );
+
+      return exceptCriticalInfo;
+    }
+
+    await this.usersRepository.update({ id: userId }, exceptCriticalInfo);
+    return exceptCriticalInfo;
   }
 
   async deleteUser(userId: number): Promise<any> {
@@ -145,8 +192,13 @@ export class UsersService {
 
     // Delete previous profile picture, if there's an existing one
     if (user.profilePicture) {
-      await this.updateUser(userId, { profilePicture: null });
-      await this.filesService.deletePublicFile(user.profilePicture.id);
+      await this.updateUserInfo(userId, { profilePicture: null });
+
+      if (user.profilePicture.key) {
+        await this.filesService.deletePublicFile(user.profilePicture.id);
+      } else {
+        await this.filesService.deletePublicFile(user.profilePicture.id, false);
+      }
     }
 
     const profilePicture = await this.filesService.createProfilePicture({
@@ -154,7 +206,7 @@ export class UsersService {
       url: uploadedPicture.Location,
     });
 
-    await this.updateUser(userId, { profilePicture });
+    await this.updateUserInfo(userId, { profilePicture });
 
     return profilePicture;
   }
@@ -163,10 +215,15 @@ export class UsersService {
     const user = await this.findUser({ id: userId });
 
     if (user.profilePicture) {
-      await this.updateUser(userId, {
+      await this.updateUserInfo(userId, {
         profilePicture: null,
       });
-      await this.filesService.deletePublicFile(user.profilePicture.id);
+
+      if (user.profilePicture.key) {
+        await this.filesService.deletePublicFile(user.profilePicture.id);
+      } else {
+        await this.filesService.deletePublicFile(user.profilePicture.id, false);
+      }
 
       return { message: `User's profile picture deleted` };
     }

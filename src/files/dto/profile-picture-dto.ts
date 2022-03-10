@@ -1,4 +1,4 @@
 export class ProfilePictureDTO {
-  key: string;
+  key?: string;
   url: string;
 }

@@ -35,19 +35,21 @@ export class FilesService {
     return uploadResult;
   }
 
-  async deletePublicFile(fileId: number) {
+  async deletePublicFile(fileId: number, includeObjectStorage = true) {
     const file = await this.publicFilesRepository.findOne({ id: fileId });
 
-    const s3 = new S3({
-      endpoint: `https://${process.env.BUCKET_REGION}.linodeobjects.com/`,
-    });
+    if (includeObjectStorage) {
+      const s3 = new S3({
+        endpoint: `https://${process.env.BUCKET_REGION}.linodeobjects.com/`,
+      });
 
-    await s3
-      .deleteObject({
-        Bucket: process.env.BUCKET_NAME,
-        Key: file.key,
-      })
-      .promise();
+      await s3
+        .deleteObject({
+          Bucket: process.env.BUCKET_NAME,
+          Key: file.key,
+        })
+        .promise();
+    }
 
     await this.publicFilesRepository.delete(fileId);
   }

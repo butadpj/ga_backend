@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   Param,
   Post,
+  Put,
   UnprocessableEntityException,
   UploadedFile,
   UseGuards,
@@ -13,6 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { isValidImage } from 'src/utils';
 import { UserDTO } from './dto';
+import { UpdateUserInfoDTO } from './dto/update-user-info.dto';
 import { Role } from './roles/role.enum';
 import { Roles } from './roles/roles.decorator';
 import { RolesGuard } from './roles/roles.guard';
@@ -48,7 +51,19 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post(':id/upload-profile-picture')
+  @Put('update-info/:id')
+  @Roles(Role.User, Role.Admin)
+  @UseInterceptors(FileInterceptor('profilePicture'))
+  async updateUserInfo(
+    @Param('id') id: string,
+    @Body() updateFields: UpdateUserInfoDTO,
+  ): Promise<any> {
+    if (!updateFields.displayName && !updateFields.profilePicture) return;
+    return await this.usersService.updateUserInfo(Number(id), updateFields);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('/upload-profile-picture/:id')
   @Roles(Role.User, Role.Admin)
   @UseInterceptors(FileInterceptor('file'))
   async uploadProfilePicture(
@@ -73,7 +88,7 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Delete(':id/delete-profile-picture')
+  @Delete('/delete-profile-picture/:id')
   @Roles(Role.User, Role.Admin)
   async deleteProfilePicture(@Param('id') id: string): Promise<any> {
     return await this.usersService.deleteProfilePicture(Number(id));

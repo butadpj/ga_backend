@@ -8,6 +8,6 @@ export class PublicFile {
   @Column()
   url: string;
 
-  @Column()
-  key: string;
+  @Column({ nullable: true })
+  key?: string;
 }
