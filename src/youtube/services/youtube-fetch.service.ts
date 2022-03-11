@@ -31,15 +31,15 @@ export class YoutubeFetchService {
     api_key: string,
     query: string,
   ): Promise<any> {
-    const searchedVideo = this.httpService.get(
+    const result = this.httpService.get(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&type=video&eventType=live&maxResults=8&order=viewCount&key=${api_key}`,
     );
 
-    const data = await searchedVideo
-      .pipe(map((response) => response.data))
+    const searchedVideos = await result
+      .pipe(map((response) => response.data.items))
       .toPromise();
 
-    return data;
+    return searchedVideos;
   }
 
   async fetchVideoDetailsById(api_key: string, video_id: string) {

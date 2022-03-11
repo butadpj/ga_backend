@@ -5,6 +5,8 @@ import { TwitchService } from './services/twitch.service';
 export class TwitchController {
   constructor(private twitchService: TwitchService) {}
 
+  private app_access_token = process.env.TWITCH_APP_ACCESS_TOKEN;
+
   @Redirect(`${process.env.CLIENT_HOST}/twitch-gaming`)
   @Get('/auth')
   processTwitchAuth(
@@ -24,7 +26,14 @@ export class TwitchController {
 
   @Get('/gaming-streams')
   getTopGamingStreams() {
-    const app_access_token = process.env.TWITCH_APP_ACCESS_TOKEN;
-    return this.twitchService.processTopGamingStreams(app_access_token);
+    return this.twitchService.processTopGamingStreams(this.app_access_token);
+  }
+
+  @Get('/search-streams')
+  getSearchStreams(@Query() { query }: any) {
+    return this.twitchService.processSearchedStreams(
+      query,
+      this.app_access_token,
+    );
   }
 }

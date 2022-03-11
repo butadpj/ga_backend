@@ -165,4 +165,41 @@ export class TwitchService {
       console.log(error.response);
     }
   }
+
+  async processSearchedStreams(query: string, access_token: string) {
+    const liveChannels =
+      await this.twitchFetchService.fetchSearchedLiveChannels(
+        query,
+        access_token,
+      );
+
+    const searchedLiveStreamsPromises = await liveChannels.map(
+      async ({ broadcaster_login }: any) => {
+        return await this.twitchFetchService.fetchStreamByUser(
+          broadcaster_login,
+          access_token,
+        );
+      },
+    );
+
+    // Wait for all game_streams to be fetched completely then return them
+    const searchedLiveStreams = await Promise.all(
+      searchedLiveStreamsPromises,
+    ).then((result) => result);
+
+    const mappedSearchedLiveStreams = searchedLiveStreams.map(
+      ({ id, title, thumbnail_url, user_name, viewer_count }) => ({
+        id,
+        title,
+        thumbnail_url,
+        user_name,
+        viewer_count,
+      }),
+    );
+
+    return {
+      query,
+      streams: mappedSearchedLiveStreams,
+    };
+  }
 }

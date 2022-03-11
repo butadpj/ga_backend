@@ -5,6 +5,8 @@ import { YoutubeService } from './services/youtube.service';
 export class YoutubeController {
   constructor(private youtubeService: YoutubeService) {}
 
+  private api_key = process.env.GOOGLE_API_KEY;
+
   @Redirect(`${process.env.CLIENT_HOST}/youtube-gaming`)
   @Get('/auth')
   processTwitchAuth(
@@ -24,7 +26,11 @@ export class YoutubeController {
 
   @Get('/gaming-streams')
   getTopGamingStreams() {
-    const api_key = process.env.GOOGLE_API_KEY;
-    return this.youtubeService.processTopGamingStreams(api_key);
+    return this.youtubeService.processTopGamingStreams(this.api_key);
+  }
+
+  @Get('/search-streams')
+  getSearchStreams(@Query() { query }: any) {
+    return this.youtubeService.processSearchedStreams(query, this.api_key);
   }
 }

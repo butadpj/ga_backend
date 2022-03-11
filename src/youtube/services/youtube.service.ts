@@ -127,7 +127,7 @@ export class YoutubeService {
             game,
           );
 
-        const streamVideoIDs = await searchedLiveStreams.items.map(
+        const streamVideoIDs = await searchedLiveStreams.map(
           (stream: any) => stream.id.videoId,
         );
 
@@ -154,5 +154,38 @@ export class YoutubeService {
       }
       throw new Error(error.message);
     }
+  }
+
+  async processSearchedStreams(query: string, api_key: string) {
+    const liveVideos =
+      await this.youtubeFetchService.fetchLiveVideosBySearchQuery(
+        api_key,
+        query,
+      );
+
+    const streamVideoIDs = await liveVideos.map(
+      (stream: any) => stream.id.videoId,
+    );
+
+    const searchedLiveStreams =
+      await this.youtubeFetchService.fetchVideoDetailsById(
+        api_key,
+        separateByComma(streamVideoIDs),
+      );
+
+    const mappedSearchedLiveStreams = searchedLiveStreams.map(
+      (stream: any) => ({
+        id: stream.id,
+        title: stream.snippet.title,
+        thumbnail_url: stream.snippet.thumbnails.medium.url,
+        channel_name: stream.snippet.channelTitle,
+        viewer_count: stream.liveStreamingDetails.concurrentViewers,
+      }),
+    );
+
+    return {
+      query,
+      streams: mappedSearchedLiveStreams,
+    };
   }
 }

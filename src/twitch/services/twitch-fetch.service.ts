@@ -178,6 +178,41 @@ export class TwitchFetchService {
     return top_gaming_streams;
   }
 
+  async fetchStreamByUser(
+    user_login: string,
+    access_token: string,
+  ): Promise<any> {
+    const result = this.httpService.get(
+      `https://api.twitch.tv/helix/streams?user_login=${user_login}&first=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Client-Id': process.env.TWITCH_CLIENT_ID,
+        },
+      },
+    );
+
+    const streamByUser = await result
+      .pipe(map((response) => response.data.data))
+      .toPromise();
+
+    return streamByUser[0];
+  }
+
+  async fetchSearchedLiveChannels(query: string, access_token: string) {
+    const result = this.httpService.get(
+      `https://api.twitch.tv/helix/search/channels?query=${query}&first=10&live_only=true`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Client-Id': process.env.TWITCH_CLIENT_ID,
+        },
+      },
+    );
+
+    return await result.pipe(map((response) => response.data.data)).toPromise();
+  }
+
   async fetchTwitchOAuthToken(code: string): Promise<any> {
     let redirectUri = `${process.env.HOST}/twitch/auth`;
 
