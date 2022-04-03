@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors({
-    origin: [process.env.CLIENT_HOST],
+    origin: [process.env.CLIENT_HOST, 'http://localhost:3000'],
   });
   config.update({
     accessKeyId: process.env.STORAGE_ACCESS_KEY,
