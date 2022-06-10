@@ -11,8 +11,6 @@ import { TwitchService } from './services/twitch.service';
 export class TwitchController {
   constructor(private twitchService: TwitchService) {}
 
-  private app_access_token = process.env.TWITCH_APP_ACCESS_TOKEN;
-
   @Redirect(`${process.env.CLIENT_HOST}/twitch-gaming`)
   @Get('/auth')
   processTwitchAuth(
@@ -42,15 +40,19 @@ export class TwitchController {
   }
 
   @Get('/gaming-streams')
-  getTopGamingStreams(@Query() { streamCount }: { streamCount?: number }) {
+  async getTopGamingStreams(
+    @Query() { streamCount }: { streamCount?: number },
+  ) {
+    const app_access_token = await this.twitchService.getAppAccessToken();
+
     return this.twitchService.processTopGamingStreams({
-      access_token: this.app_access_token,
+      access_token: app_access_token,
       streamCount: streamCount || 8,
     });
   }
 
   @Get('/search-channels')
-  getSearchChannels(
+  async getSearchChannels(
     @Query()
     {
       query,
@@ -62,9 +64,11 @@ export class TwitchController {
       searchSuggestionsCount?: number;
     },
   ) {
+    const app_access_token = await this.twitchService.getAppAccessToken();
+
     return this.twitchService.processSearchChannels({
       query,
-      access_token: this.app_access_token,
+      access_token: app_access_token,
       searchResultsCount: searchResultsCount || 10,
       searchSuggestionsCount: searchSuggestionsCount || 5,
     });

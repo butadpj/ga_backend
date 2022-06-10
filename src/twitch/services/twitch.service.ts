@@ -12,6 +12,13 @@ export class TwitchService {
     private twitchFetchService: TwitchFetchService,
   ) {}
 
+  async getAppAccessToken() {
+    const { access_token } =
+      await this.twitchFetchService.fetchAppAccessToken();
+
+    return access_token;
+  }
+
   async processTwitchAuth(code: string, email: string): Promise<any> {
     const { access_token } =
       await this.twitchFetchService.fetchTwitchOAuthToken(code);
@@ -155,11 +162,11 @@ export class TwitchService {
         access_token,
       );
 
-      const game_streams = await topGames.map(async (game: any) => {
+      const game_streams = topGames.map(async (game: any) => {
         const streams = await this.twitchFetchService.fetchTopGamingStreams(
           game.id,
           access_token,
-          streamCount || 8,
+          streamCount,
         );
         return {
           game: game.name,
@@ -182,19 +189,19 @@ export class TwitchService {
   }: {
     query: string;
     access_token: string;
-    searchResultsCount?: number;
-    searchSuggestionsCount?: number;
+    searchResultsCount: number;
+    searchSuggestionsCount: number;
   }) {
     const searchResults = await this.twitchFetchService.fetchSearchChannels(
       query,
       access_token,
-      searchResultsCount || 10,
+      searchResultsCount,
     );
 
     const searchSuggestions = await this.twitchFetchService.fetchSearchChannels(
       query,
       access_token,
-      searchSuggestionsCount || 5,
+      searchSuggestionsCount,
     );
 
     const mappedSearchResultsPromises = searchResults.map(async (channel) => {

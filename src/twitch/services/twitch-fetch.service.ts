@@ -141,42 +141,56 @@ export class TwitchFetchService {
     }
   }
 
-  async fetchTopGames(access_token: string) {
-    const { data: topGames } = await lastValueFrom(
-      this.httpService.get(`https://api.twitch.tv/helix/games/top`, {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          'Client-Id': process.env.TWITCH_CLIENT_ID,
-        },
-      }),
-    );
+  async fetchTopGames(
+    access_token: string,
+  ): Promise<Array<{ id: string; name: string }>> {
+    try {
+      const { data: topGames } = await lastValueFrom(
+        this.httpService.get(`https://api.twitch.tv/helix/games/top`, {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Client-Id': process.env.TWITCH_CLIENT_ID,
+          },
+        }),
+      );
 
-    return topGames.data.map((game: any) => {
-      return {
-        id: game.id,
-        name: game.name,
-      };
-    });
+      return topGames.data.map((game: any) => {
+        return {
+          id: game.id,
+          name: game.name,
+        };
+      });
+    } catch (error) {
+      if (error.response?.data.status === 401) {
+        throw new Error('TWITCH_APP_ACCESS_TOKEN has expired or is invalid');
+      }
+    }
   }
 
   async fetchTopGamingStreams(
     game_id: string,
     access_token: string,
     streamCount: number,
-  ) {
-    const { data: topGamingStreams } = await lastValueFrom(
-      this.httpService.get(
-        `https://api.twitch.tv/helix/streams?game_id=${game_id}&first=${streamCount}`,
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            'Client-Id': process.env.TWITCH_CLIENT_ID,
+  ): Promise<Array<StreamInterface>> {
+    try {
+      const { data: topGamingStreams } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/streams?game_id=${game_id}&first=${streamCount}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
           },
-        },
-      ),
-    );
+        ),
+      );
 
-    return topGamingStreams.data;
+      return topGamingStreams.data;
+    } catch (error) {
+      if (error.response?.data.status === 401) {
+        throw new Error('TWITCH_APP_ACCESS_TOKEN has expired or is invalid');
+      }
+    }
   }
 
   async fetchStreamByUser(
@@ -203,19 +217,25 @@ export class TwitchFetchService {
     access_token: string,
     resultCount: number,
   ): Promise<Array<SearchChannelInterface>> {
-    const { data: searchChannels } = await lastValueFrom(
-      this.httpService.get(
-        `https://api.twitch.tv/helix/search/channels?query=${query}&first=${resultCount}`,
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            'Client-Id': process.env.TWITCH_CLIENT_ID,
+    try {
+      const { data: searchChannels } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/search/channels?query=${query}&first=${resultCount}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
           },
-        },
-      ),
-    );
+        ),
+      );
 
-    return searchChannels.data;
+      return searchChannels.data;
+    } catch (error) {
+      if (error.response?.data.status === 401) {
+        throw new Error('TWITCH_APP_ACCESS_TOKEN has expired or is invalid');
+      }
+    }
   }
 
   async fetchTwitchOAuthToken(code: string): Promise<any> {
@@ -237,5 +257,19 @@ export class TwitchFetchService {
 
       console.error(axiosError);
     }
+  }
+
+  async fetchAppAccessToken(): Promise<{
+    access_token: string;
+    expires_in: number;
+    token_type: string;
+  }> {
+    const { data } = await lastValueFrom(
+      this.httpService.post(
+        `https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&grant_type=client_credentials`,
+      ),
+    );
+
+    return data;
   }
 }

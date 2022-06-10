@@ -1,4 +1,10 @@
 export class TwitchFetchServiceMock {
+  async fetchAppAccessToken() {
+    return {
+      access_token: 'rfx2uswqe8l4g1mkagrvg5tv0ks3',
+    };
+  }
+
   async fetchTwitchOAuthToken() {
     return {
       access_token: 'rfx2uswqe8l4g1mkagrvg5tv0ks3',
