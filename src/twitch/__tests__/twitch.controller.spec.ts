@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { TwitchService } from '../twitch.service';
-import { TwitchFetchService } from '../twitch-fetch.service';
+import { TwitchService } from '../services/twitch.service';
+import { TwitchFetchService } from '../services/twitch-fetch.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from '@users/services/users.service';
 import { UsersTwitchDataService } from '@users/services/users-twitch-data.service';
