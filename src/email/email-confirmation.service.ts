@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '@users/services/users.service';
-import { AuthService } from 'src/auth/auth.service';
-import { jwtConstants } from 'src/auth/constants';
+import { AuthService } from '@auth/auth.service';
+import { jwtConstants } from '@auth/constants';
 import { EmailService } from './email.service';
 
 @Injectable()

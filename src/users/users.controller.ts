@@ -12,8 +12,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { isValidImage } from 'src/utils';
+import { JwtAuthGuard } from '@auth/jwt-auth.guard';
+import { isValidImage } from '@utils/index';
 import { UserDTO } from './dto';
 import { UpdateUserInfoDTO } from './dto/update-user-info.dto';
 import { Role } from './roles/role.enum';

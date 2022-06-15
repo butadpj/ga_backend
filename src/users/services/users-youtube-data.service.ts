@@ -29,9 +29,9 @@ export class UsersYoutubeDataService {
       throw new NotFoundException(
         {
           statusCode: 404,
-          message: `No twitch account linked to this user`,
+          message: `No YouTube account linked to this user`,
         },
-        `No twitch account linked to the user`,
+        `No YouTube account linked to the user`,
       );
     }
 
@@ -91,7 +91,7 @@ export class UsersYoutubeDataService {
     }, 1800000); // 30 mins
   }
 
-  async saveTwitchSubscribers(
+  async saveYoutubeSubscribers(
     userId: number,
     subscribers: Array<any>,
   ): Promise<any> {
