@@ -26,36 +26,42 @@ describe('Twitch-fetch Service', () => {
     app_access_token = access_token;
   });
 
-  test('Should throw an error if twitch app_access_token is invalid or has expired', async () => {
-    const topGamesError = async () =>
-      await twitchFetchService.fetchTopGames(invalidAccessToken);
+  describe('- Error handling,', () => {
+    test('Should throw an Error if apiKey is not valid', () => {
+      const searchStreamsError = async () =>
+        twitchFetchService.fetchStreamsBySearchQuery(
+          'query',
+          invalidAccessToken,
+          1,
+        );
 
-    const topGamingStreamsError = async () =>
-      await twitchFetchService.fetchTopGamingStreams(
-        'dsad',
-        invalidAccessToken,
-        3,
-      );
+      const streamDetailsError = async () =>
+        twitchFetchService.fetchStreamDetailsByUser(
+          'streamer',
+          invalidAccessToken,
+        );
 
-    const fetchSearchChannelsError = async () => {
-      await twitchFetchService.fetchSearchChannels(
-        'TenZ',
-        invalidAccessToken,
-        3,
-      );
-    };
+      const searchChannelsError = async () =>
+        twitchFetchService.fetchSearchChannels('query', invalidAccessToken, 1);
 
-    expect(topGamesError).rejects.toThrow(
-      'TWITCH_APP_ACCESS_TOKEN has expired or is invalid',
-    );
+      const streamDetailsByError = async () =>
+        twitchFetchService.fetchStreamDetailsByUser(
+          'streamer',
+          invalidAccessToken,
+        );
 
-    expect(topGamingStreamsError).rejects.toThrow(
-      'TWITCH_APP_ACCESS_TOKEN has expired or is invalid',
-    );
+      const userTotalFollowersError = async () =>
+        twitchFetchService.fetchUserTotalFollowers(
+          invalidAccessToken,
+          'user-id',
+        );
 
-    expect(fetchSearchChannelsError).rejects.toThrow(
-      'TWITCH_APP_ACCESS_TOKEN has expired or is invalid',
-    );
+      expect(searchStreamsError).rejects.toThrow('Invalid OAuth token');
+      expect(streamDetailsError).rejects.toThrow('Invalid OAuth token');
+      expect(searchChannelsError).rejects.toThrow('Invalid OAuth token');
+      expect(streamDetailsByError).rejects.toThrow('Invalid OAuth token');
+      expect(userTotalFollowersError).rejects.toThrow('Invalid OAuth token');
+    });
   });
 
   describe('- fetchTopGames()', () => {
@@ -110,6 +116,36 @@ describe('Twitch-fetch Service', () => {
       });
 
       expect(searchChannels.length).toEqual(resultCount);
+    });
+  });
+
+  describe('- fetchStreamDetailsByUser()', () => {
+    test('Stream by user should have needed properties', async () => {
+      // If the test fails, change the liveStreamingUser to the
+      // user_login of currently live streaming user
+      const liveStreamingUser = 'asmongold';
+
+      const streamByUser = await twitchFetchService.fetchStreamDetailsByUser(
+        liveStreamingUser,
+        app_access_token,
+      );
+
+      expect(streamByUser).toHaveProperty('id');
+      expect(streamByUser).toHaveProperty('thumbnail_url');
+      expect(streamByUser).toHaveProperty('title');
+      expect(streamByUser).toHaveProperty('user_name');
+      expect(streamByUser).toHaveProperty('user_login');
+      expect(streamByUser).toHaveProperty('viewer_count');
+    });
+  });
+
+  describe('- fetchAppAccessToken()', () => {
+    test('Should have the needed properties', async () => {
+      const token = await twitchFetchService.fetchAppAccessToken();
+
+      expect(token).toHaveProperty('access_token');
+      expect(token).toHaveProperty('expires_in');
+      expect(token).toHaveProperty('token_type');
     });
   });
 });

@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { SearchChannelInterface } from '@twitch/interfaces/SearchChannelsInterface';
 import { StreamInterface } from '@twitch/interfaces/StreamInterface';
 
@@ -65,27 +69,6 @@ export class TwitchFetchService {
     );
 
     return userTwitchVideos.data;
-  }
-
-  async fetchUserTotalFollowers(access_token: string, user_id: string) {
-    try {
-      const { data: followers } = await lastValueFrom(
-        this.httpService.get(
-          `https://api.twitch.tv/helix/users/follows?to_id=${user_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-              'Client-Id': process.env.TWITCH_CLIENT_ID,
-            },
-          },
-        ),
-      );
-
-      return followers.total;
-    } catch (error) {
-      console.log(error.response.data);
-      return error.response.data.message;
-    }
   }
 
   async fetchChannelSubscribers(
@@ -161,9 +144,13 @@ export class TwitchFetchService {
         };
       });
     } catch (error) {
-      if (error.response?.data.status === 401) {
-        throw new Error('TWITCH_APP_ACCESS_TOKEN has expired or is invalid');
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
       }
+
+      throw error;
     }
   }
 
@@ -187,29 +174,51 @@ export class TwitchFetchService {
 
       return topGamingStreams.data;
     } catch (error) {
-      if (error.response?.data.status === 401) {
-        throw new Error('TWITCH_APP_ACCESS_TOKEN has expired or is invalid');
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
       }
+
+      throw error;
     }
   }
 
-  async fetchStreamByUser(
-    user_login: string,
+  async fetchStreamsBySearchQuery(
+    query: string,
     access_token: string,
-  ): Promise<StreamInterface> {
-    const { data: streamByUser } = await lastValueFrom(
-      this.httpService.get(
-        `https://api.twitch.tv/helix/streams?user_login=${user_login}&first=1`,
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            'Client-Id': process.env.TWITCH_CLIENT_ID,
+    resultsCount: number,
+  ): Promise<Array<{ id: string; user_login: string }>> {
+    try {
+      const { data: searchStreams } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/search/channels?query=${query}&live_only=true&first=${resultsCount}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
           },
-        },
-      ),
-    );
+        ),
+      );
 
-    return streamByUser.data[0];
+      const mappedSearchedStreams = searchStreams.data.map((stream: any) => {
+        return {
+          id: stream.id,
+          user_login: stream.broadcaster_login,
+        };
+      });
+
+      return mappedSearchedStreams;
+    } catch (error) {
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
+      }
+
+      throw error;
+    }
   }
 
   async fetchSearchChannels(
@@ -232,9 +241,81 @@ export class TwitchFetchService {
 
       return searchChannels.data;
     } catch (error) {
-      if (error.response?.data.status === 401) {
-        throw new Error('TWITCH_APP_ACCESS_TOKEN has expired or is invalid');
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
       }
+
+      throw error;
+    }
+  }
+
+  async fetchStreamDetailsByUser(
+    user_login: string,
+    access_token: string,
+  ): Promise<StreamInterface> {
+    try {
+      const { data: streamByUser } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/streams?user_login=${user_login}&first=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
+          },
+        ),
+      );
+
+      const stream = streamByUser.data[0];
+
+      if (!stream) {
+        throw new BadRequestException(`User-${user_login} is not live`);
+      }
+
+      return {
+        id: stream.id,
+        user_login: stream.user_login,
+        user_name: stream.user_name,
+        title: stream.title,
+        viewer_count: stream.viewer_count,
+        thumbnail_url: stream.thumbnail_url,
+      };
+    } catch (error) {
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  async fetchUserTotalFollowers(access_token: string, user_id: string) {
+    try {
+      const { data: followers } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/users/follows?to_id=${user_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
+          },
+        ),
+      );
+
+      return followers.total;
+    } catch (error) {
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
+      }
+
+      throw error;
     }
   }
 

@@ -4,9 +4,11 @@ export const topGamingStreamsMock = [
     streams: [
       {
         id: 'streamid123',
-        game_id: '493057',
-        type: 'live',
+        user_login: 'streamer_name',
+        user_name: 'Streamer_Name',
         title: 'Stream title',
+        viewer_count: 999,
+        thumbnail_url: 'thumbnail.jpg',
       },
     ],
   },
@@ -15,9 +17,11 @@ export const topGamingStreamsMock = [
     streams: [
       {
         id: 'streamid123',
-        game_id: '493058',
-        type: 'live',
+        user_login: 'streamer_name',
+        user_name: 'Streamer_Name',
         title: 'Stream title',
+        viewer_count: 999,
+        thumbnail_url: 'thumbnail.jpg',
       },
     ],
   },
@@ -26,9 +30,11 @@ export const topGamingStreamsMock = [
     streams: [
       {
         id: 'streamid123',
-        game_id: '493059',
-        type: 'live',
+        user_login: 'streamer_name',
+        user_name: 'Streamer_Name',
         title: 'Stream title',
+        viewer_count: 999,
+        thumbnail_url: 'thumbnail.jpg',
       },
     ],
   },

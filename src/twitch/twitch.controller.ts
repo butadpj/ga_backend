@@ -23,19 +23,21 @@ export class TwitchController {
         // Ex. dsgSAw1esdojxzMSsxna:emailthisismyemail@sample.com:
         // return "thisismyemail@sample.com"
         const pattern = /(?<=:email\s*).*?(?=\s*\:)/;
+
+        if (state.match(pattern) === null) {
+          throw new BadRequestException(
+            `No email can be found in state. Email must be enclosed in ":email" and ":"`,
+          );
+        }
+
         const email = state.match(pattern)[0];
-        if (!email)
-          throw new BadRequestException({
-            message: `there's no email can't be found on state`,
-          });
+
         return this.twitchService.processTwitchAuth(code, email);
       }
       return { message: `Server didn't return anything` };
     } catch (error) {
-      if (error.message === `Cannot read property '0' of null`)
-        throw new BadRequestException({
-          message: `No email can be found in state. Email must be enclosed in ":email" and ":"`,
-        });
+      console.log(error);
+      throw error;
     }
   }
 
@@ -51,8 +53,8 @@ export class TwitchController {
     });
   }
 
-  @Get('/search-channels')
-  async getSearchChannels(
+  @Get('/search')
+  async getSearchResults(
     @Query()
     {
       query,
@@ -66,7 +68,7 @@ export class TwitchController {
   ) {
     const app_access_token = await this.twitchService.getAppAccessToken();
 
-    return this.twitchService.processSearchChannels({
+    return this.twitchService.processSearchResults({
       query,
       access_token: app_access_token,
       searchResultsCount: searchResultsCount || 10,

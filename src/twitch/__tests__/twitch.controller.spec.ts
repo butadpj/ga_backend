@@ -163,8 +163,10 @@ describe('Twitch Controller', () => {
 
   describe('- getSearchChannels()', () => {
     test('Should return search results of channels and streams & suggestions of live/not live channels', async () => {
-      const searchResults = await twitchController.getSearchChannels({
+      const searchResults = await twitchController.getSearchResults({
         query: 'test channel',
+        searchResultsCount: 4,
+        searchSuggestionsCount: 2,
       });
 
       expect(searchResults).toMatchObject(searchResultsMock);

@@ -45,9 +45,11 @@ export class TwitchFetchServiceMock {
   ) {
     const getStreamsBasedOnStreamCount = new Array(streamCounts).fill({
       id: 'streamid123',
-      game_id,
-      type: 'live',
+      user_login: 'streamer_name',
+      user_name: 'Streamer_Name',
       title: 'Stream title',
+      viewer_count: 999,
+      thumbnail_url: 'thumbnail.jpg',
     });
 
     return getStreamsBasedOnStreamCount;
@@ -92,10 +94,30 @@ export class TwitchFetchServiceMock {
         thumbnail_url: 'stream-thumbnail url',
         display_name: 'channel3',
       },
+      {
+        id: 'channel-id',
+        is_live: false,
+        broadcaster_login: 'channel4',
+        thumbnail_url: 'stream-thumbnail url',
+        display_name: 'channel4',
+      },
     ];
   }
 
-  async fetchStreamByUser(user_login: string) {
+  async fetchStreamsBySearchQuery(
+    query: string,
+    access_token: string,
+    searchResultsCount: number,
+  ) {
+    const getStreamsBasedOnStreamCount = new Array(searchResultsCount).fill({
+      id: 'streamid123',
+      user_login: 'guy-on-twitch',
+    });
+
+    return getStreamsBasedOnStreamCount;
+  }
+
+  async fetchStreamDetailsByUser(user_login: string, access_token: string) {
     return {
       id: 'stream-id',
       title: 'stream-title',

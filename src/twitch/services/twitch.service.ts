@@ -20,25 +20,29 @@ export class TwitchService {
   }
 
   async processTwitchAuth(code: string, email: string): Promise<any> {
-    const { access_token } =
-      await this.twitchFetchService.fetchTwitchOAuthToken(code);
+    try {
+      const { access_token } =
+        await this.twitchFetchService.fetchTwitchOAuthToken(code);
 
-    if (!access_token) throw new Error('Invalid or undefined access_token');
+      if (!access_token) throw new Error('Invalid or undefined access_token');
 
-    const { twitch_user_id } = await this.processUserTwitchData(
-      access_token,
-      email,
-    );
+      const { twitch_user_id } = await this.processUserTwitchData(
+        access_token,
+        email,
+      );
 
-    await this.processUserTwitchVideos(access_token, email, twitch_user_id);
+      await this.processUserTwitchVideos(access_token, email, twitch_user_id);
 
-    await this.processUserChannelInformation(
-      access_token,
-      email,
-      twitch_user_id,
-    );
+      await this.processUserChannelInformation(
+        access_token,
+        email,
+        twitch_user_id,
+      );
 
-    this.usersTwitchDataService.autoUnlinkTwitchAccount(email);
+      this.usersTwitchDataService.autoUnlinkTwitchAccount(email);
+    } catch (error) {
+      throw error;
+    }
   }
 
   async processUserTwitchData(access_token: string, email: string) {
@@ -181,7 +185,7 @@ export class TwitchService {
     }
   }
 
-  async processSearchChannels({
+  async processSearchResults({
     query,
     access_token,
     searchResultsCount,
@@ -192,6 +196,24 @@ export class TwitchService {
     searchResultsCount: number;
     searchSuggestionsCount: number;
   }) {
+    const searchStreams =
+      await this.twitchFetchService.fetchStreamsBySearchQuery(
+        query,
+        access_token,
+        searchResultsCount,
+      );
+
+    const streamVideosPromises = searchStreams.map(async (stream) => {
+      return await this.twitchFetchService.fetchStreamDetailsByUser(
+        stream.user_login,
+        access_token,
+      );
+    });
+
+    const streamVideos = await Promise.all(streamVideosPromises).then(
+      (result) => result,
+    );
+
     const searchResults = await this.twitchFetchService.fetchSearchChannels(
       query,
       access_token,
@@ -206,10 +228,11 @@ export class TwitchService {
 
     const mappedSearchResultsPromises = searchResults.map(async (channel) => {
       if (channel.is_live) {
-        const liveStream = await this.twitchFetchService.fetchStreamByUser(
-          channel.broadcaster_login,
-          access_token,
-        );
+        const liveStream =
+          await this.twitchFetchService.fetchStreamDetailsByUser(
+            channel.broadcaster_login,
+            access_token,
+          );
 
         return {
           id: liveStream.id,
@@ -267,7 +290,7 @@ export class TwitchService {
     return {
       query,
       result: {
-        streams: mappedSearchResults.filter((channel) => channel.is_live),
+        streams: streamVideos,
         channels: mappedSearchResults.filter((channel) => !channel.is_live),
       },
       suggestions: {
