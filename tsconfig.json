@@ -21,7 +21,9 @@
       "@users/*": ["src/users/*"],
       "@twitch/*": ["src/twitch/*"],
       "@youtube/*": ["src/youtube/*"],
-      "@files/*": ["src/files/*"]
+      "@files/*": ["src/files/*"],
+      "@auth/*": ["src/auth/*"],
+      "@utils/*": ["src/utils/*"]
     }
   }
 }

@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { SearchChannelInterface } from '@twitch/interfaces/SearchChannelsInterface';
+import { StreamInterface } from '@twitch/interfaces/StreamInterface';
 
-import { map } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 
 import { mockSubscribers } from 'src/utils/mockData';
 
@@ -25,19 +31,21 @@ export class TwitchFetchService {
       headerToken = `Bearer ${access_token}`;
     }
 
-    const res = this.httpService.get(url, {
-      headers: {
-        Authorization: headerToken,
-        'Client-Id': process.env.TWITCH_CLIENT_ID,
-      },
-    });
+    const { data: userTwitchData } = await lastValueFrom(
+      this.httpService.get(url, {
+        headers: {
+          Authorization: headerToken,
+          'Client-Id': process.env.TWITCH_CLIENT_ID,
+        },
+      }),
+    );
 
     const {
       id: twitch_user_id,
       display_name: twitch_display_name,
       profile_image_url: twitch_display_picture,
       email: twitch_email,
-    } = await res.pipe(map((response) => response.data.data[0])).toPromise();
+    } = userTwitchData.data[0];
 
     return {
       twitch_user_id,
@@ -48,44 +56,19 @@ export class TwitchFetchService {
   }
 
   async fetchUserTwitchVideos({ access_token, twitch_user_id }): Promise<any> {
-    const res = this.httpService.get(
-      `https://api.twitch.tv/helix/videos?user_id=${twitch_user_id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          'Client-Id': process.env.TWITCH_CLIENT_ID,
-        },
-      },
-    );
-
-    const videos = await res
-      .pipe(map((response) => response.data.data))
-      .toPromise();
-
-    return videos;
-  }
-
-  async fetchUserFollowers(access_token: string, user_id: string) {
-    try {
-      const res = this.httpService.get(
-        `https://api.twitch.tv/helix/users/follows?to_id=${user_id}`,
+    const { data: userTwitchVideos } = await lastValueFrom(
+      this.httpService.get(
+        `https://api.twitch.tv/helix/videos?user_id=${twitch_user_id}`,
         {
           headers: {
             Authorization: `Bearer ${access_token}`,
             'Client-Id': process.env.TWITCH_CLIENT_ID,
           },
         },
-      );
+      ),
+    );
 
-      const totalFollowers = await res
-        .pipe(map((response) => response.data.total))
-        .toPromise();
-
-      return totalFollowers;
-    } catch (error) {
-      console.log(error.response.data);
-      return error.response.data.message;
-    }
+    return userTwitchVideos.data;
   }
 
   async fetchChannelSubscribers(
@@ -93,39 +76,41 @@ export class TwitchFetchService {
     broadcaster_id: string,
   ): Promise<any> {
     try {
-      const res = this.httpService.get(
-        `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${broadcaster_id}&first=10`,
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            'Client-Id': process.env.TWITCH_CLIENT_ID,
+      const { data: channelSubscribers } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${broadcaster_id}&first=10`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
           },
-        },
+        ),
       );
 
-      const { data, total } = await res
-        .pipe(map((response) => response.data))
-        .toPromise();
+      const { data, total } = channelSubscribers;
 
       // const { data, total } = mockSubscribers;
 
-      const subscribersPromise = data.map(async (subscriber: any) => {
-        const { twitch_display_picture } = await this.fetchUserTwitchData({
-          user_id: subscriber.user_id,
-        });
+      const mappedChannelSubscribersPromises = data.map(
+        async (subscriber: any) => {
+          const { twitch_display_picture } = await this.fetchUserTwitchData({
+            user_id: subscriber.user_id,
+          });
 
-        return {
-          twitch_id: subscriber.broadcaster_id,
-          subscriber_id: subscriber.user_id,
-          subscriber_name: subscriber.user_name,
-          subscriber_display_picture: twitch_display_picture,
-          is_gift: subscriber.is_gift,
-        };
-      });
-
-      const subscribers = await Promise.all(subscribersPromise).then(
-        (result) => result,
+          return {
+            twitch_id: subscriber.broadcaster_id,
+            subscriber_id: subscriber.user_id,
+            subscriber_name: subscriber.user_name,
+            subscriber_display_picture: twitch_display_picture,
+            is_gift: subscriber.is_gift,
+          };
+        },
       );
+
+      const subscribers = await Promise.all(
+        mappedChannelSubscribersPromises,
+      ).then((result) => result);
 
       return {
         subscribers,
@@ -139,91 +124,233 @@ export class TwitchFetchService {
     }
   }
 
-  async fetchTopGames(access_token: string) {
-    const res = this.httpService.get(`https://api.twitch.tv/helix/games/top`, {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-        'Client-Id': process.env.TWITCH_CLIENT_ID,
-      },
-    });
+  async fetchTopGames(
+    access_token: string,
+  ): Promise<Array<{ id: string; name: string }>> {
+    try {
+      const { data: topGames } = await lastValueFrom(
+        this.httpService.get(`https://api.twitch.tv/helix/games/top`, {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Client-Id': process.env.TWITCH_CLIENT_ID,
+          },
+        }),
+      );
 
-    const top_games = await res
-      .pipe(map((response) => response.data.data))
-      .toPromise();
+      return topGames.data.map((game: any) => {
+        return {
+          id: game.id,
+          name: game.name,
+        };
+      });
+    } catch (error) {
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
+      }
 
-    return top_games.map((game: any) => {
-      return {
-        id: game.id,
-        name: game.name,
-      };
-    });
+      throw error;
+    }
   }
 
-  async fetchTopGamingStreams(game_id: string, access_token: string) {
-    const streamCount = 8;
-    const res = this.httpService.get(
-      `https://api.twitch.tv/helix/streams?game_id=${game_id}&first=${streamCount}`,
-      {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          'Client-Id': process.env.TWITCH_CLIENT_ID,
-        },
-      },
-    );
+  async fetchTopGamingStreams(
+    game_id: string,
+    access_token: string,
+    streamCount: number,
+  ): Promise<Array<StreamInterface>> {
+    try {
+      const { data: topGamingStreams } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/streams?game_id=${game_id}&first=${streamCount}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
+          },
+        ),
+      );
 
-    const top_gaming_streams = await res
-      .pipe(map((response) => response.data.data))
-      .toPromise();
+      return topGamingStreams.data;
+    } catch (error) {
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
+      }
 
-    return top_gaming_streams;
+      throw error;
+    }
   }
 
-  async fetchStreamByUser(
+  async fetchStreamsBySearchQuery(
+    query: string,
+    access_token: string,
+    resultsCount: number,
+  ): Promise<Array<{ id: string; user_login: string }>> {
+    try {
+      const { data: searchStreams } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/search/channels?query=${query}&live_only=true&first=${resultsCount}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
+          },
+        ),
+      );
+
+      const mappedSearchedStreams = searchStreams.data.map((stream: any) => {
+        return {
+          id: stream.id,
+          user_login: stream.broadcaster_login,
+        };
+      });
+
+      return mappedSearchedStreams;
+    } catch (error) {
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  async fetchSearchChannels(
+    query: string,
+    access_token: string,
+    resultCount: number,
+  ): Promise<Array<SearchChannelInterface>> {
+    try {
+      const { data: searchChannels } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/search/channels?query=${query}&first=${resultCount}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
+          },
+        ),
+      );
+
+      return searchChannels.data;
+    } catch (error) {
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  async fetchStreamDetailsByUser(
     user_login: string,
     access_token: string,
-  ): Promise<any> {
-    const result = this.httpService.get(
-      `https://api.twitch.tv/helix/streams?user_login=${user_login}&first=1`,
-      {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          'Client-Id': process.env.TWITCH_CLIENT_ID,
-        },
-      },
-    );
+  ): Promise<StreamInterface> {
+    try {
+      const { data: streamByUser } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/streams?user_login=${user_login}&first=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
+          },
+        ),
+      );
 
-    const streamByUser = await result
-      .pipe(map((response) => response.data.data))
-      .toPromise();
+      const stream = streamByUser.data[0];
 
-    return streamByUser[0];
+      if (!stream) {
+        throw new BadRequestException(`User-${user_login} is not live`);
+      }
+
+      return {
+        id: stream.id,
+        user_login: stream.user_login,
+        user_name: stream.user_name,
+        title: stream.title,
+        viewer_count: stream.viewer_count,
+        thumbnail_url: stream.thumbnail_url,
+      };
+    } catch (error) {
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
+      }
+
+      throw error;
+    }
   }
 
-  async fetchSearchedLiveChannels(query: string, access_token: string) {
-    const result = this.httpService.get(
-      `https://api.twitch.tv/helix/search/channels?query=${query}&first=10&live_only=true`,
-      {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          'Client-Id': process.env.TWITCH_CLIENT_ID,
-        },
-      },
-    );
+  async fetchUserTotalFollowers(access_token: string, user_id: string) {
+    try {
+      const { data: followers } = await lastValueFrom(
+        this.httpService.get(
+          `https://api.twitch.tv/helix/users/follows?to_id=${user_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Client-Id': process.env.TWITCH_CLIENT_ID,
+            },
+          },
+        ),
+      );
 
-    return await result.pipe(map((response) => response.data.data)).toPromise();
+      return followers.total;
+    } catch (error) {
+      if (error.response.data) {
+        if (error.response.data.status === 401) {
+          throw new UnauthorizedException(error.response.data.message);
+        }
+      }
+
+      throw error;
+    }
   }
 
   async fetchTwitchOAuthToken(code: string): Promise<any> {
-    let redirectUri = `${process.env.HOST}/twitch/auth`;
+    try {
+      let redirectUri = `${process.env.HOST}/twitch/auth`;
 
-    if (process.env.NODE_ENV === 'development')
-      redirectUri = `${process.env.HOST}:${process.env.PORT}/twitch/auth`;
+      if (process.env.NODE_ENV === 'development')
+        redirectUri = `${process.env.HOST}:${process.env.PORT}/twitch/auth`;
 
-    const res = this.httpService.post(
-      `https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${redirectUri}`,
+      const { data: OAuthToken } = await lastValueFrom(
+        this.httpService.post(
+          `https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${redirectUri}`,
+        ),
+      );
+
+      return OAuthToken;
+    } catch (error) {
+      const axiosError = error.response?.data;
+
+      console.error(axiosError);
+    }
+  }
+
+  async fetchAppAccessToken(): Promise<{
+    access_token: string;
+    expires_in: number;
+    token_type: string;
+  }> {
+    const { data } = await lastValueFrom(
+      this.httpService.post(
+        `https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&grant_type=client_credentials`,
+      ),
     );
-    const data = await res.pipe(map((response) => response.data)).toPromise();
 
-    return data.access_token;
+    return data;
   }
 }
