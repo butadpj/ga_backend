@@ -3,16 +3,17 @@ import {
   Controller,
   Delete,
   Get,
-  Param,
+  NotFoundException,
   Post,
   Put,
+  Request,
   UnprocessableEntityException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '@auth/jwt-auth.guard';
+import { JwtAuthGuard } from '@auth/guard/jwt-auth.guard';
 import { isValidImage } from '@utils/index';
 import { UserDTO } from './dto';
 import { UpdateUserInfoDTO } from './dto/update-user-info.dto';
@@ -39,114 +40,132 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get(':id')
+  @Get('/me')
   @Roles(Role.User, Role.Admin)
-  async getUser(@Param('id') id: string): Promise<UserDTO> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...rest } = await this.usersService.findUser({
-      id: Number(id),
+  async getUser(@Request() req: any): Promise<UserDTO> {
+    const userId = req.user.id;
+
+    const user = await this.usersService.findUser({
+      id: userId,
     });
 
-    return rest;
+    if (!user)
+      throw new NotFoundException(
+        "Error retrieving user's data. User doesn't exist",
+      );
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...exceptPassword } = user;
+
+    return exceptPassword;
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Put('update-info/:id')
+  @Put('/me/update-info')
   @Roles(Role.User, Role.Admin)
   @UseInterceptors(FileInterceptor('profilePicture'))
   async updateUserInfo(
-    @Param('id') id: string,
+    @Request() req: any,
     @Body() updateFields: UpdateUserInfoDTO,
   ): Promise<any> {
+    const userId = req.user.id;
+
     if (!updateFields.displayName && !updateFields.profilePicture) return;
-    return await this.usersService.updateUserInfo(Number(id), updateFields);
+    return await this.usersService.updateUserInfo(userId, updateFields);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post('/upload-profile-picture/:id')
+  @Post('/me/upload-profile-picture')
   @Roles(Role.User, Role.Admin)
   @UseInterceptors(FileInterceptor('file'))
   async uploadProfilePicture(
-    @Param('id') id: string,
+    @Request() req: any,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<any> {
+    const userId = req.user.id;
+
     if (isValidImage(file)) {
-      return await this.usersService.uploadProfilePicture(Number(id), {
+      return await this.usersService.uploadProfilePicture(userId, {
         buffer: file.buffer,
         contentType: file.mimetype,
         fileName: file.originalname,
       });
     }
+
     throw new UnprocessableEntityException(
-      {
-        statusCode: 422,
-        message: `Uploaded file is not a valid image`,
-        error: 'Unprocessable Entity',
-      },
-      `File not a valid image`,
+      `Uploaded file is not a valid image`,
     );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Delete('/delete-profile-picture/:id')
+  @Delete('/me/delete-profile-picture')
   @Roles(Role.User, Role.Admin)
-  async deleteProfilePicture(@Param('id') id: string): Promise<any> {
-    return await this.usersService.deleteProfilePicture(Number(id));
+  async deleteProfilePicture(@Request() req: any): Promise<any> {
+    const userId = req.user.id;
+
+    return await this.usersService.deleteProfilePicture(userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.User, Role.Admin)
-  @Delete('/delete/:id')
-  async deleteUser(@Param('id') id: string): Promise<any> {
-    return this.usersService.deleteUser(Number(id));
+  @Delete('/me/delete-account')
+  async deleteUser(@Request() req: any): Promise<any> {
+    const userId = req.user.id;
+
+    return this.usersService.deleteUser(userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('/twitch-data/:id')
+  @Get('/me/twitch-data')
   @Roles(Role.User, Role.Admin)
-  getUserTwitchData(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersTwitchDataService.getUserTwitchData(Number(id));
+  getUserTwitchData(@Request() req: any): Promise<UserDTO> {
+    const userId = req.user.id;
+
+    return this.usersTwitchDataService.getUserTwitchData(userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('/twitch-videos/:id')
+  @Get('/me/twitch-subscribers/')
   @Roles(Role.User, Role.Admin)
-  getUserTwitchVideos(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersTwitchDataService.getUserTwitchVideos(Number(id));
+  getUserTwitchSubscribers(@Request() req: any): Promise<UserDTO> {
+    const userId = req.user.id;
+
+    return this.usersTwitchDataService.getUserTwitchSubscribers(userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('/twitch-subscribers/:id')
+  @Get('/me/unlink-twitch')
   @Roles(Role.User, Role.Admin)
-  getUserTwitchSubscribers(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersTwitchDataService.getUserTwitchSubscribers(Number(id));
+  unLinkTwitchAccount(@Request() req: any): Promise<UserDTO> {
+    const userId = req.user.id;
+
+    return this.usersTwitchDataService.deleteUserTwitchData(userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('/unlink-twitch/:id')
+  @Get('/me/youtube-data/')
   @Roles(Role.User, Role.Admin)
-  unLinkTwitchAccount(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersTwitchDataService.deleteUserTwitchData(Number(id));
+  getUserYoutubeData(@Request() req: any): Promise<UserDTO> {
+    const userId = req.user.id;
+
+    return this.usersYoutubeDataService.getUserYoutubeData(userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('/youtube-data/:id')
+  @Get('/me/youtube-subscribers')
   @Roles(Role.User, Role.Admin)
-  getUserYoutubeData(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersYoutubeDataService.getUserYoutubeData(Number(id));
+  getUserYoutubeSubscribers(@Request() req: any): Promise<UserDTO> {
+    const userId = req.user.id;
+
+    return this.usersYoutubeDataService.getUserYoutubeSubscribers(userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('/youtube-subscribers/:id')
+  @Get('/me/unlink-youtube')
   @Roles(Role.User, Role.Admin)
-  getUserYoutubeSubscribers(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersYoutubeDataService.getUserYoutubeSubscribers(Number(id));
-  }
+  unLinkYoutubeAccount(@Request() req: any): Promise<UserDTO> {
+    const userId = req.user.id;
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('/unlink-youtube/:id')
-  @Roles(Role.User, Role.Admin)
-  unLinkYoutubeAccount(@Param('id') id: string): Promise<UserDTO> {
-    return this.usersYoutubeDataService.deleteUserYoutubeData(Number(id));
+    return this.usersYoutubeDataService.deleteUserYoutubeData(userId);
   }
 }

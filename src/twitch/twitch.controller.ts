@@ -1,38 +1,39 @@
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Query,
-  Redirect,
-} from '@nestjs/common';
+import { Controller, Get, Query, Res } from '@nestjs/common';
+import { extractFromState } from '@utils/index';
+import { Response } from 'express';
 import { TwitchService } from './services/twitch.service';
 
 @Controller('twitch')
 export class TwitchController {
   constructor(private twitchService: TwitchService) {}
 
-  @Redirect(`${process.env.CLIENT_HOST}/twitch-gaming`)
   @Get('/auth')
-  processTwitchAuth(
+  async processTwitchAuth(
+    @Res() res: Response | any,
     @Query() { code, scope, state }: any,
-  ): Promise<any> | { message: string } {
+  ): Promise<any> {
     try {
       if (code && scope && state) {
-        // extract the email from the state
-        // email is always between ":email" and ":"
-        // Ex. dsgSAw1esdojxzMSsxna:emailthisismyemail@sample.com:
-        // return "thisismyemail@sample.com"
-        const pattern = /(?<=:email\s*).*?(?=\s*\:)/;
+        /**
+         *  state value should be in between :stateName and :
+         *
+         *  Ex. you want to pass an email and redirect_page to the state
+         *  - the value of the email should be in between of :email and :
+         *  - the value of the redirect_page should be in between of :redirect_page and :
+         *
+         *   if state === sAD!02d760&7s@0o3sd:emailmyemail@mail.com:redirect_page/home:
+         *      - email === myemail@mail.com
+         *      - redirect_page === /home
+         *
+         */
+        const { email, redirect_page: redirectPage } = extractFromState(state, [
+          'email',
+          'redirect_page',
+        ]);
 
-        if (state.match(pattern) === null) {
-          throw new BadRequestException(
-            `No email can be found in state. Email must be enclosed in ":email" and ":"`,
-          );
-        }
+        await this.twitchService.processTwitchAuth(code, email);
 
-        const email = state.match(pattern)[0];
-
-        return this.twitchService.processTwitchAuth(code, email);
+        res.redirect(`${process.env.CLIENT_HOST}${redirectPage}`);
       }
       return { message: `Server didn't return anything` };
     } catch (error) {

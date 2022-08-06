@@ -77,6 +77,7 @@ describe('Youtube-fetch Service', () => {
     });
   });
 
+  // Not consistent (channel might not be streaming at the moment)
   describe('- fetchStreamDetailsById()', () => {
     test('Stream details should have needed properties', async () => {
       const streamIds = ['AgGI415l-xg', 'zNDGabJQ-YE'];

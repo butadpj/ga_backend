@@ -10,7 +10,7 @@ import {
 import { CreateUserDTO } from '@users/dto';
 import { EmailConfirmationService } from '../email/email-confirmation.service';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard } from './local-auth.guard';
+import { LocalAuthGuard } from './guard/local-auth.guard';
 
 @Controller()
 export class AuthController {
@@ -28,8 +28,11 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() credentials: CreateUserDTO): Promise<any> {
-    const user = await this.authService.register(credentials);
-    await this.emailConfirmationService.sendVerificationLink(user.email);
-    return user;
+    const registeredUser = await this.authService.register(credentials);
+
+    await this.emailConfirmationService.sendVerificationLink(
+      registeredUser.email,
+    );
+    return registeredUser;
   }
 }

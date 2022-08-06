@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { UsersService } from '@users/services/users.service';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { jwtConstants } from './constants';
+import { jwtConstants } from '../constants';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -15,9 +15,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const { email } = payload;
+    const { userId } = payload;
 
-    const user = await this.usersService.findUser({ email });
+    const user = await this.usersService.findUser({ id: userId });
+
+    if (!user)
+      throw new NotFoundException(
+        `User with a user id of ${userId} (from token payload)  doesn't exist`,
+      );
 
     return {
       id: user.id,

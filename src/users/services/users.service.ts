@@ -29,34 +29,25 @@ export class UsersService {
   }: {
     id?: number;
     email?: string;
-  }): Promise<UserDTO> {
+  }): Promise<UserDTO | null> {
+    // Find by email
     if (email) {
-      const user = await this.usersRepository.findOne({ where: { email } });
+      const user = await this.usersRepository.findOne({
+        where: { email },
+      });
 
       if (!user) {
-        throw new UnprocessableEntityException(
-          {
-            statusCode: 422,
-            message: `Cannot find user with an email of ${email}`,
-            error: 'Unprocessable Entity',
-          },
-          `User doesn't exist`,
-        );
+        return null;
       }
 
       return user;
     }
+
+    // Find by id
     const user = await this.usersRepository.findOne({ where: { id } });
 
     if (!user) {
-      throw new UnprocessableEntityException(
-        {
-          statusCode: 422,
-          message: `Cannot find user with an id of ${id}`,
-          error: 'Unprocessable Entity',
-        },
-        `User doesn't exist`,
-      );
+      return null;
     }
 
     return user;
@@ -68,31 +59,19 @@ export class UsersService {
   }
 
   async createUser(credentials: CreateUserDTO): Promise<any> {
-    /* 
-      findUser() throws an error if user is not found.
-      So we'll just use the catch() to create the user
-      there, since we know that the user doesn't exist yet
-    */
+    const user = await this.findUser({ email: credentials.email });
 
-    return await this.findUser({ email: credentials.email })
-      .then(() => {
-        throw new UnprocessableEntityException(
-          {
-            statusCode: 422,
-            message: 'User already exist',
-            error: 'Unprocessable Entity',
-          },
-          'Duplicate email not allowed',
-        );
-      })
-      .catch(async () => {
-        const createdUser = this.usersRepository.create({
-          email: credentials.email,
-          password: await this.hashPassword(credentials.password),
-        });
+    if (user)
+      throw new UnprocessableEntityException(
+        'User with that email already exists',
+      );
 
-        return await this.usersRepository.save(createdUser);
-      });
+    const createdUser = this.usersRepository.create({
+      email: credentials.email,
+      password: await this.hashPassword(credentials.password),
+    });
+
+    return await this.usersRepository.save(createdUser);
   }
 
   // Critical  info can't be updated by this function
@@ -110,6 +89,11 @@ export class UsersService {
       !exceptCriticalInfo.profilePicture.key
     ) {
       const user = await this.findUser({ id: userId });
+
+      if (!user)
+        throw new NotFoundException(
+          "Error updating user's information. User doesn't exist",
+        );
 
       if (user.profilePicture) {
         await this.usersRepository.update(
@@ -151,20 +135,15 @@ export class UsersService {
   async deleteUser(userId: number): Promise<any> {
     const user = await this.findUser({ id: userId });
 
-    if (user) {
-      await this.usersRepository.delete(user);
-
-      return {
-        message: `Good bye ${user.email} 👋. Till we meet again!`,
-      };
+    if (!user) {
+      throw new NotFoundException(`Error deleting user. User doesn't exist`);
     }
 
-    throw new NotFoundException(
-      {
-        message: `User with an id of ${userId} doesn't exist`,
-      },
-      'User not exist',
-    );
+    await this.usersRepository.delete({ id: user.id });
+
+    return {
+      message: `Good bye ${user.email} 👋. Till we meet again!`,
+    };
   }
 
   async markEmailAsConfirmed(email: string) {
@@ -175,7 +154,7 @@ export class UsersService {
       },
     );
 
-    return await this.findUser({ email: email });
+    return await this.findUser({ email });
   }
 
   async uploadProfilePicture(
@@ -183,6 +162,11 @@ export class UsersService {
     imageFile: { buffer: Buffer; fileName: string; contentType: string },
   ): Promise<any> {
     const user = await this.findUser({ id: userId });
+
+    if (!user)
+      throw new NotFoundException(
+        "Error uploading user's profile picture subscribers. User doesn't exist",
+      );
 
     const uploadedPicture = await this.filesService.uploadFileToS3(
       imageFile.buffer,
@@ -213,6 +197,11 @@ export class UsersService {
 
   async deleteProfilePicture(userId: number) {
     const user = await this.findUser({ id: userId });
+
+    if (!user)
+      throw new NotFoundException(
+        "Error deleting user's profile picture. User doesn't exist",
+      );
 
     if (user.profilePicture) {
       await this.updateUserInfo(userId, {

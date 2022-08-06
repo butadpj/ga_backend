@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersYoutubeDataService } from '@users/services/users-youtube-data.service';
 import { UsersService } from '@users/services/users.service';
 import { StreamInterface } from '@youtube/interfaces/StreamInterface';
@@ -35,6 +35,13 @@ export class YoutubeService {
     email: string,
   ): Promise<any> {
     try {
+      const user = await this.usersService.findUser({ email });
+
+      if (!user)
+        throw new NotFoundException(
+          "Error processing user's youtube data. User doesn't exist",
+        );
+
       const {
         id: youtube_user_id,
         snippet,
@@ -47,8 +54,6 @@ export class YoutubeService {
         youtube_display_picture: snippet.thumbnails.medium.url,
         youtube_subscribers_count: statistics.subscriberCount,
       };
-
-      const user = await this.usersService.findUser({ email });
 
       const userHasExistingYoutubeAccount =
         await this.usersYoutubeDataService.hasExistingYoutubeAccount(user.id);
@@ -66,7 +71,7 @@ export class YoutubeService {
       }
 
       return await this.usersYoutubeDataService.linkUserYoutubeData(
-        email,
+        user.id,
         youtubeData,
       );
     } catch (error) {
@@ -107,9 +112,14 @@ export class YoutubeService {
   }
 
   async processUserChannelInformation(access_token: string, email: string) {
-    try {
-      const user = await this.usersService.findUser({ email });
+    const user = await this.usersService.findUser({ email });
 
+    if (!user)
+      throw new NotFoundException(
+        "Error processing user's twitch videos. User doesn't exist",
+      );
+
+    try {
       const subscribers =
         await this.youtubeFetchService.fetchChannelSubscribers(access_token);
 

@@ -21,18 +21,17 @@ export class UsersYoutubeDataService {
   async getUserYoutubeData(userId: number): Promise<any> {
     const user = await this.usersService.findUser({ id: userId });
 
+    if (!user)
+      throw new NotFoundException(
+        "Error retrieving user's youtube data. User doesn't exist",
+      );
+
     const userYoutubeData = await this.userYoutubeDataRepository.findOne({
-      where: { user: user.id },
+      where: { user: { id: user.id } },
     });
 
     if (!userYoutubeData) {
-      throw new NotFoundException(
-        {
-          statusCode: 404,
-          message: `No YouTube account linked to this user`,
-        },
-        `No YouTube account linked to the user`,
-      );
+      throw new NotFoundException(`No YouTube account linked to this user`);
     }
 
     return userYoutubeData;
@@ -40,6 +39,11 @@ export class UsersYoutubeDataService {
 
   async getUserYoutubeSubscribers(userId: number): Promise<any> {
     const user = await this.usersService.findUser({ id: userId });
+
+    if (!user)
+      throw new NotFoundException(
+        "Error retrieving user's youtube subscribers. User doesn't exist",
+      );
 
     const userYoutubeData = await this.getUserYoutubeData(user.id);
 
@@ -59,17 +63,15 @@ export class UsersYoutubeDataService {
     return await this.usersService.findUser({ id: userId });
   }
 
-  async linkUserYoutubeData(email: string, youtubeData: any): Promise<any> {
-    const user = await this.usersService.findUser({ email });
-
+  async linkUserYoutubeData(userId: number, youtubeData: any): Promise<any> {
     const newUserYoutubeData = this.userYoutubeDataRepository.create({
-      user: user.id,
+      user: userId,
       ...youtubeData,
     });
 
     await this.userYoutubeDataRepository.save(newUserYoutubeData);
 
-    return await this.getUserYoutubeData(user.id);
+    return await this.getUserYoutubeData(userId);
   }
 
   async deleteUserYoutubeData(userId: number): Promise<any> {
@@ -111,10 +113,10 @@ export class UsersYoutubeDataService {
 
   async hasExistingYoutubeAccount(userId: number): Promise<boolean> {
     return await this.getUserYoutubeData(userId)
-      .then((data) => {
+      .then(() => {
         return true;
       })
-      .catch((error) => {
+      .catch(() => {
         return false;
       });
   }

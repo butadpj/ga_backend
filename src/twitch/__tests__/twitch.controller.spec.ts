@@ -4,7 +4,6 @@ import { TwitchFetchService } from '../services/twitch-fetch.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from '@users/services/users.service';
 import { UsersTwitchDataService } from '@users/services/users-twitch-data.service';
-import { HttpModule } from '@nestjs/axios';
 import { searchResultsMock } from './mocks/searchResultsMock';
 import {
   TwitchFetchServiceMock,
@@ -52,15 +51,43 @@ describe('Twitch Controller', () => {
   describe('- processTwitchAuth()', () => {
     test(`Should throw an Error if email can't be found in state`, () => {
       const noEmailError = async () => {
-        await twitchController.processTwitchAuth({
-          code: 'valid-code',
-          scope: 'scopes',
-          state: 'state-no-email',
-        });
+        await twitchController.processTwitchAuth(
+          {
+            redirect: () => {
+              return;
+            },
+          },
+          {
+            code: 'valid-code',
+            scope: 'scopes',
+            state: 'no-email:redirect_page/my-profile:',
+          },
+        );
       };
 
       expect(noEmailError).rejects.toThrow(
-        `No email can be found in state. Email must be enclosed in ":email" and ":"`,
+        `No email can be found in state. email must be enclosed in ":email" and ":"`,
+      );
+    });
+
+    test(`Should throw an Error if redirect_page can't be found in state`, () => {
+      const noRedirectPageError = async () => {
+        await twitchController.processTwitchAuth(
+          {
+            redirect: () => {
+              return;
+            },
+          },
+          {
+            code: 'valid-code',
+            scope: 'scopes',
+            state: ':emailvalid-email@mail.com:no-redirect-page',
+          },
+        );
+      };
+
+      expect(noRedirectPageError).rejects.toThrow(
+        `No redirect_page can be found in state. redirect_page must be enclosed in ":redirect_page" and ":"`,
       );
     });
 
@@ -70,26 +97,18 @@ describe('Twitch Controller', () => {
         'processUserTwitchData',
       );
 
-      await twitchController.processTwitchAuth({
-        code: 'valid-code',
-        scope: 'scopes',
-        state: 'state:emailsample@email.com:',
-      });
-
-      expect(spyProcessUserTwitchData).toHaveBeenCalled();
-    });
-
-    test('Should call processUserTwitchVideos()', async () => {
-      const spyProcessUserTwitchData = jest.spyOn(
-        twitchService,
-        'processUserTwitchVideos',
+      await twitchController.processTwitchAuth(
+        {
+          redirect: () => {
+            return;
+          },
+        },
+        {
+          code: 'valid-code',
+          scope: 'scopes',
+          state: ':emailvalid-email@mail.com:redirect_page/my-profile:',
+        },
       );
-
-      await twitchController.processTwitchAuth({
-        code: 'valid-code',
-        scope: 'scopes',
-        state: 'state:emailsample@email.com:',
-      });
 
       expect(spyProcessUserTwitchData).toHaveBeenCalled();
     });
@@ -100,11 +119,18 @@ describe('Twitch Controller', () => {
         'processUserChannelInformation',
       );
 
-      await twitchController.processTwitchAuth({
-        code: 'valid-code',
-        scope: 'scopes',
-        state: 'state:emailsample@email.com:',
-      });
+      await twitchController.processTwitchAuth(
+        {
+          redirect: () => {
+            return;
+          },
+        },
+        {
+          code: 'valid-code',
+          scope: 'scopes',
+          state: ':emailvalid-email@mail.com:redirect_page/my-profile:',
+        },
+      );
 
       expect(spyProcessUserTwitchData).toHaveBeenCalled();
     });
@@ -115,11 +141,18 @@ describe('Twitch Controller', () => {
         'autoUnlinkTwitchAccount',
       );
 
-      await twitchController.processTwitchAuth({
-        code: 'valid-code',
-        scope: 'scopes',
-        state: 'state:emailsample@email.com:',
-      });
+      await twitchController.processTwitchAuth(
+        {
+          redirect: () => {
+            return;
+          },
+        },
+        {
+          code: 'valid-code',
+          scope: 'scopes',
+          state: ':emailvalid-email@mail.com:redirect_page/my-profile:',
+        },
+      );
 
       expect(spyProcessUserTwitchData).toHaveBeenCalled();
     });
