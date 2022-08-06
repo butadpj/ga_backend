@@ -36,7 +36,9 @@ export class FilesService {
   }
 
   async deletePublicFile(fileId: number, includeObjectStorage = true) {
-    const file = await this.publicFilesRepository.findOne({ id: fileId });
+    const file = await this.publicFilesRepository.findOne({
+      where: { id: fileId },
+    });
 
     if (includeObjectStorage) {
       const s3 = new S3({
