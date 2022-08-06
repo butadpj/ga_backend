@@ -20,40 +20,23 @@ export class AuthService {
   async validateUser(credentials: LoginUserDTO): Promise<UserDTO> {
     const user = await this.usersService.findUser({ email: credentials.email });
 
-    if (user) {
-      const isPasswordMatch = await bcrypt.compare(
-        credentials.password,
-        user.password,
-      );
+    if (!user) throw new NotFoundException(`User doesn't exist`);
 
-      if (isPasswordMatch) {
-        return user;
-      }
-
-      throw new UnauthorizedException(
-        {
-          statusCode: 422,
-          message: `Username or password didn't match`,
-          error: 'Unauthorized exception',
-        },
-        'Wrong login credentials',
-      );
-    }
-    throw new NotFoundException(
-      {
-        statusCode: 404,
-        message: `User doesn't exist`,
-        error: 'Not found exception',
-      },
-      'User not found',
+    const isPasswordMatch = await bcrypt.compare(
+      credentials.password,
+      user.password,
     );
+
+    if (isPasswordMatch) {
+      return user;
+    }
+
+    throw new UnauthorizedException(`Username or password didn't match`);
   }
 
   async login(user: any): Promise<any> {
     const payload = {
       userId: user.id,
-      email: user.email,
-      isEmailConfirmed: user.isEmailConfirmed,
     };
 
     const hasTwitch =
