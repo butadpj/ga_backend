@@ -1,4 +1,4 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { UsersService } from '@users/services/users.service';
@@ -25,19 +25,17 @@ export class UsersTwitchDataService {
   async getUserTwitchData(userId: number): Promise<any> {
     const user = await this.usersService.findUser({ id: userId });
 
+    if (!user)
+      throw new NotFoundException(
+        "Error retrieving user's twitch data. User doesn't exist",
+      );
+
     const userTwitchData = await this.userTwitchDataRepository.findOne({
-      where: { user: user.id },
+      where: { user: { id: user.id } },
     });
 
     if (!userTwitchData) {
-      throw new UnprocessableEntityException(
-        {
-          statusCode: 422,
-          message: `No twitch account linked to this user`,
-          error: 'Unprocessable Entity',
-        },
-        `No twitch account linked to the user`,
-      );
+      throw new NotFoundException(`No Twitch account linked to this user`);
     }
 
     return userTwitchData;
@@ -45,6 +43,11 @@ export class UsersTwitchDataService {
 
   async getUserTwitchVideos(userId: number): Promise<any> {
     const user = await this.usersService.findUser({ id: userId });
+
+    if (!user)
+      throw new NotFoundException(
+        "Error retrieving user's twitch videos. User doesn't exist",
+      );
 
     const userTwitchData = await this.getUserTwitchData(user.id);
 
@@ -55,6 +58,11 @@ export class UsersTwitchDataService {
 
   async getUserTwitchSubscribers(userId: number): Promise<any> {
     const user = await this.usersService.findUser({ id: userId });
+
+    if (!user)
+      throw new NotFoundException(
+        "Error retrieving user's twitch subscribers. User doesn't exist",
+      );
 
     const userTwitchData = await this.getUserTwitchData(user.id);
 
@@ -109,17 +117,15 @@ export class UsersTwitchDataService {
     return await this.usersService.findUser({ id: userId });
   }
 
-  async linkUserTwitchData(email: string, twitchData: any): Promise<any> {
-    const user = await this.usersService.findUser({ email });
-
+  async linkUserTwitchData(userId: number, twitchData: any): Promise<any> {
     const newUserTwitchData = this.userTwitchDataRepository.create({
-      user: user.id,
+      user: userId,
       ...twitchData,
     });
 
     await this.userTwitchDataRepository.save(newUserTwitchData);
 
-    return await this.getUserTwitchData(user.id);
+    return await this.getUserTwitchData(userId);
   }
 
   async deleteUserTwitchData(userId: number): Promise<any> {
@@ -143,10 +149,10 @@ export class UsersTwitchDataService {
 
   async hasExistingTwitchAccount(userId: number): Promise<boolean> {
     return await this.getUserTwitchData(userId)
-      .then((data) => {
+      .then(() => {
         return true;
       })
-      .catch((error) => {
+      .catch(() => {
         return false;
       });
   }
