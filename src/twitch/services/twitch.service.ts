@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersTwitchDataService } from '@users/services/users-twitch-data.service';
 import { UsersService } from '@users/services/users.service';
 import { TwitchFetchService } from './twitch-fetch.service';
@@ -31,7 +31,7 @@ export class TwitchService {
         email,
       );
 
-      await this.processUserTwitchVideos(access_token, email, twitch_user_id);
+      // await this.processUserTwitchVideos(access_token, email, twitch_user_id);
 
       await this.processUserChannelInformation(
         access_token,
@@ -46,6 +46,13 @@ export class TwitchService {
   }
 
   async processUserTwitchData(access_token: string, email: string) {
+    const user = await this.usersService.findUser({ email });
+
+    if (!user)
+      throw new NotFoundException(
+        "Error processing user's twitch data. User doesn't exist",
+      );
+
     const {
       twitch_user_id,
       twitch_display_name,
@@ -53,7 +60,12 @@ export class TwitchService {
       twitch_email,
     } = await this.twitchFetchService.fetchUserTwitchData({ access_token });
 
-    const user = await this.usersService.findUser({ email });
+    const twitchData = {
+      twitch_user_id,
+      twitch_display_name,
+      twitch_display_picture,
+      twitch_email,
+    };
 
     if (!user.displayName)
       await this.usersService.updateUserInfo(user.id, {
@@ -64,20 +76,16 @@ export class TwitchService {
       await this.usersTwitchDataService.hasExistingTwitchAccount(user.id);
 
     if (userHasExistingTwitchAccount) {
-      return await this.usersTwitchDataService.updateUserTwitchData(user.id, {
-        twitch_user_id,
-        twitch_display_name,
-        twitch_display_picture,
-        twitch_email,
-      });
+      return await this.usersTwitchDataService.updateUserTwitchData(
+        user.id,
+        twitchData,
+      );
     }
 
-    return await this.usersTwitchDataService.linkUserTwitchData(email, {
-      twitch_user_id,
-      twitch_display_name,
-      twitch_display_picture,
-      twitch_email,
-    });
+    return await this.usersTwitchDataService.linkUserTwitchData(
+      user.id,
+      twitchData,
+    );
   }
 
   async processUserTwitchVideos(
@@ -86,6 +94,11 @@ export class TwitchService {
     twitch_user_id: string,
   ) {
     const user = await this.usersService.findUser({ email });
+
+    if (!user)
+      throw new NotFoundException(
+        "Error processing user's twitch videos. User doesn't exist",
+      );
 
     const videos = await this.twitchFetchService.fetchUserTwitchVideos({
       access_token,
@@ -126,6 +139,11 @@ export class TwitchService {
     followersCount: number,
   ): Promise<any> {
     const user = await this.usersService.findUser({ email });
+
+    if (!user)
+      throw new NotFoundException(
+        "Error processing user's channel's subscribers. User doesn't exist",
+      );
 
     const {
       error,

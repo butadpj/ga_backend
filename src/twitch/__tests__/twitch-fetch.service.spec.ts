@@ -119,6 +119,7 @@ describe('Twitch-fetch Service', () => {
     });
   });
 
+  // Not consistent (channel might not be streaming at the moment)
   describe('- fetchStreamDetailsByUser()', () => {
     test('Stream by user should have needed properties', async () => {
       // If the test fails, change the liveStreamingUser to the
