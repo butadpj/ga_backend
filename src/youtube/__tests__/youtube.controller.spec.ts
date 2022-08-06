@@ -48,16 +48,44 @@ describe('Youtube Controller', () => {
 
   describe('- processYoutubeAuth()', () => {
     test(`Should throw an Error if email can't be found in state`, () => {
-      const noEmailError = () => {
-        youtubeController.processYoutubeAuth({
-          code: 'valid-code',
-          scope: 'scopes',
-          state: 'state-no-email',
-        });
+      const noEmailError = async () => {
+        await youtubeController.processYoutubeAuth(
+          {
+            redirect: () => {
+              return;
+            },
+          },
+          {
+            code: 'valid-code',
+            scope: 'scopes',
+            state: 'no-email:redirect_page/my-profile:',
+          },
+        );
       };
 
-      expect(noEmailError).toThrow(
-        'No email can be found in state. Email must be enclosed in ":email" and ":"',
+      expect(noEmailError).rejects.toThrow(
+        'No email can be found in state. email must be enclosed in ":email" and ":"',
+      );
+    });
+
+    test(`Should throw an Error if redirect_page can't be found in state`, () => {
+      const noRedirectPageError = async () => {
+        await youtubeController.processYoutubeAuth(
+          {
+            redirect: () => {
+              return;
+            },
+          },
+          {
+            code: 'valid-code',
+            scope: 'scopes',
+            state: ':emailvalid-email@mail.com:no-redirect-page',
+          },
+        );
+      };
+
+      expect(noRedirectPageError).rejects.toThrow(
+        `No redirect_page can be found in state. redirect_page must be enclosed in ":redirect_page" and ":"`,
       );
     });
 
@@ -67,11 +95,18 @@ describe('Youtube Controller', () => {
         'processUserYoutubeData',
       );
 
-      await youtubeController.processYoutubeAuth({
-        code: 'valid-code',
-        scope: 'scopes',
-        state: 'state:emailsample@email.com:',
-      });
+      await youtubeController.processYoutubeAuth(
+        {
+          redirect: () => {
+            return;
+          },
+        },
+        {
+          code: 'valid-code',
+          scope: 'scopes',
+          state: ':emailvalid-email@mail.com:redirect_page/my-profile:',
+        },
+      );
 
       expect(spyProcessUserYoutubeData).toHaveBeenCalled();
     });
@@ -82,11 +117,18 @@ describe('Youtube Controller', () => {
         'processUserChannelInformation',
       );
 
-      await youtubeController.processYoutubeAuth({
-        code: 'valid-code',
-        scope: 'scopes',
-        state: 'state:emailsample@email.com:',
-      });
+      await youtubeController.processYoutubeAuth(
+        {
+          redirect: () => {
+            return;
+          },
+        },
+        {
+          code: 'valid-code',
+          scope: 'scopes',
+          state: ':emailvalid-email@mail.com:redirect_page/my-profile:',
+        },
+      );
 
       expect(spyProcessUserYoutubeData).toHaveBeenCalled();
     });
@@ -97,11 +139,18 @@ describe('Youtube Controller', () => {
         'autoUnlinkYoutubeAccount',
       );
 
-      await youtubeController.processYoutubeAuth({
-        code: 'valid-code',
-        scope: 'scopes',
-        state: 'state:emailsample@email.com:',
-      });
+      await youtubeController.processYoutubeAuth(
+        {
+          redirect: () => {
+            return;
+          },
+        },
+        {
+          code: 'valid-code',
+          scope: 'scopes',
+          state: ':emailvalid-email@mail.com:redirect_page/my-profile:',
+        },
+      );
 
       expect(spyProcessUserYoutubeData).toHaveBeenCalled();
     });
