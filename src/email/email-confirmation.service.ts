@@ -3,6 +3,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '@users/services/users.service';
@@ -48,6 +49,11 @@ export class EmailConfirmationService {
   public async confirmEmail(email: string) {
     const user = await this.usersService.findUser({ email });
 
+    if (!user)
+      throw new NotFoundException(
+        `Email can't be confirm. User doesn't exist `,
+      );
+
     if (user.isEmailConfirmed) {
       throw new BadRequestException('Email already confirmed');
     }
@@ -73,11 +79,11 @@ export class EmailConfirmationService {
       console.error(error);
       if (error?.name === 'TokenExpiredError') {
         throw new BadRequestException({
-          message: 'Confirmation token has already expired',
+          message: 'Confirmation link has already expired.',
         });
       }
       throw new BadRequestException({
-        message: 'Bad confirmation token',
+        message: 'Invalid confirmation link.',
       });
     }
   }
